@@ -74,6 +74,10 @@ function ExerciseListScreen() {
     <View style={styles.container}>
     <Text>Choose an exercise to record:</Text>
     {ShowExercises(_exercises)}
+    {/* Clear all saved items */}
+    <Button title="Clear Storage" onPress={
+        () => clearAsyncStorage(clearable, clearableSaved)
+        } />
     </View>
   );
 }
@@ -332,10 +336,7 @@ function Exercise(props) {
       {/* Display 1RM */}
       
         
-      {/* Clear all saved items */}
-      <Button title="Clear Storage" onPress={
-        () => clearAsyncStorage(clearable, clearableSaved)
-        } />
+      
     </View>
   );
 }
