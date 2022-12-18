@@ -6,26 +6,28 @@ import { LoginScreen } from './login';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
-import { array, string } from 'prop-types';
+
 
 const Stack = createStackNavigator();
 
-const placeholder_img = './basketball-placeholder.png';
-const ct_bench_press = './assets/benchpress.jpg';
+import placeholder_img from './basketball-placeholder.png';
+import ct_bench_press from './assets/benchpress.jpg';
+import brian_squat from './assets/squat.jpg';
+import eddie_deadlift from './assets/deadlift.jpg';
 
 
-const _exerciseList = [
-  "Bench Press",
-  "Squat",
-  "Deadlift",
+const _exercises = [
+  {name: "Bench Press", img: ct_bench_press},
+  {name: "Squat", img: brian_squat},
+  {name: "Deadlift", img: eddie_deadlift},
 ]
 
 const generate_exercise_screens = () => {
   let screens = [];
-  for (let i = 0; i < _exerciseList.length; i++) {
+  for (let i = 0; i < _exercises.length; i++) {
     screens.push(
-      <Stack.Screen key={_exerciseList[i]} name={_exerciseList[i]}>
-        {() => <Exercise name={_exerciseList[i]} />}
+      <Stack.Screen key={_exercises[i].name} name={_exercises[i].name}>
+        {() => <Exercise name={_exercises[i].name} />}
       </Stack.Screen>
     );
 
@@ -45,34 +47,33 @@ export default function App() {
   );
 }
 
-function ExerciseListScreen() {
+function ShowExercises(exercises) {
   const navigation = useNavigation();
+  let output = [];
+  for (let i = 0; i < exercises.length; i++) {
+    console.log(exercises[i].img)
+    output.push(
+      <TouchableOpacity
+        key={exercises[i].name}
+        onPress={() => navigation.navigate(exercises[i].name)}
+      >
+        <Image
+          source={exercises[i].img }
+          style={{ width: 200, height: 200}}
+          />
+        <Text>{exercises[i].name}</Text>
+      </TouchableOpacity>
+    );
+  }
+  return output;
+
+}
+
+function ExerciseListScreen() {
   return (
-    <View
-      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <StatusBar style="auto" />
-      <Text>Choose an exercise to record:</Text>
-      <View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate(_exerciseList[0])}
-        >
-          <Image
-            source={require(ct_bench_press)}
-            style={{ width: 200, height: 200}}
-            />
-          <Text>{_exerciseList[0]}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate(_exerciseList[1])}
-        >
-          <Image
-            source={require(placeholder_img)}
-            style={{ width: 200, height: 200}}
-            />
-          <Text>{_exerciseList[1]}</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+    <Text>Choose an exercise to record:</Text>
+    {ShowExercises(_exercises)}
     </View>
   );
 }
@@ -248,12 +249,25 @@ function Exercise(props) {
     handleRepSubmit();
     handleWeightSubmit();
 
-
-    const combined = {
-      sets: [...(savedSets ?? []), sets],
-      reps: [...(savedReps ?? []), reps],
-      weight: [...(savedWeights ?? []), weight],
-    };
+    let combined = {}
+    // check if there is a saved full set
+    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null') {
+      // if there is no saved full set, create a new one
+      combined = {
+        sets: [sets],
+        reps: [reps],
+        weight: [weight],
+      };
+    } else {
+      // if there is a saved full set, parse it
+      let prevFullSet = JSON.parse(savedFullSet);
+      combined = {
+        sets: [prevFullSet.sets, sets],
+        reps: [prevFullSet.reps, reps],
+        weight: [prevFullSet.weight, weight],
+      };
+    }
+    // combine the saved full set with the new values
 
     prevFullSet = savedFullSet;
     const fullSetString = JSON.stringify(combined);
@@ -268,6 +282,11 @@ function Exercise(props) {
 
   // function to display the full set
   const displayFullSet = () => {
+    // check if there is a saved full set
+    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null' || savedFullSet === 'undefined' || savedFullSet === 'NaN' || savedFullSet === '0') {
+      return;
+    }
+
     let output = []
       if (typeof(savedFullSet) === 'string') {
         let prevSetsRepsWeights = JSON.parse(savedFullSet)
@@ -286,15 +305,6 @@ function Exercise(props) {
       }
       return output;
 
-
-      // try {
-      //   let temp = JSON.parse(savedFullSet).sets
-      //   console.log(`type of savedFullSet ${typeof( temp)} and savedFullSet ${temp}`)
-      //   console.log(`savedFullSet ${temp}`)
-      // } 
-      // catch (e) {
-      //   console.log(e)
-      // }
   }
 
 
@@ -340,5 +350,12 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  }, 
+  exercisecard: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 
+    'center' 
+  }
+
 });
