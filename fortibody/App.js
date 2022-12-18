@@ -66,12 +66,17 @@ function ExerciseListScreen() {
   );
 }
 
-async function clearAsyncStorage(functions = null) {
+async function clearAsyncStorage(functions = null, resetSaved = null) {
   try {
-    await AsyncStorage.clear();
     functions.forEach((func) => {
-      func([]);
+      func('');
     });
+    if (resetSaved != null) {
+      resetSaved.forEach((func) => {
+        func([]);
+      });
+    }
+    await AsyncStorage.clear();
     console.log('AsyncStorage cleared successfully');
   } catch (e) {
     console.error('Error clearing AsyncStorage', e);
@@ -86,27 +91,36 @@ async function clearAsyncStorage(functions = null) {
 function Exercise(props) {
   const name = props.name;
   // State variable to store the sets input by the user
-  const [sets, setSets] = useState('');
+  const [sets, setSets] = useState(0);
   // State variable to store the reps input by the user
-  const [reps, setReps] = useState('');
+  const [reps, setReps] = useState(0);
   // State variable to store the weight input by the user
-  const [weight, setWeight] = useState('');
+  const [weight, setWeight] = useState(0);
 
   // State variable to store the reps input by the user
-  const [savedSets, setSavedSets] = useState([]);
-  const [savedReps, setSavedReps] = useState([]);
-  const [savedWeights, setSavedWeights] = useState([]);
+  const [savedSets, setSavedSets] = useState(0);
+  const [savedReps, setSavedReps] = useState(0);
+  const [savedWeights, setSavedWeights] = useState(0);
+  const [savedFullSet, setSavedFullSet] = useState(0);
+
+
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
   const setKey = name + '-sets';
   const repsKey = name + '-reps';
   const weightKey = name + '-weight';
+  const fullSetKey = name + '-fullSet';
 
   // list for clearning all saved items
   const clearable = [
     // save each setSaved function to clearable
-    setSavedSets,
-    setSavedReps,
-    setSavedWeights,
+    setSets, setReps, setWeight,
+    // setSavedFullSet,
+  ]
+
+  const clearableSaved = [
+    // save each setSaved function to clearable
+    setSavedSets, setSavedReps, setSavedWeights,
+    // setSavedFullSet,
   ]
 
   // Retrieve the sets from storage when the component mounts
@@ -115,27 +129,37 @@ function Exercise(props) {
       const savedSetsFromStorage = await AsyncStorage.getItem(setKey);
       const savedRepsFromStorage = await AsyncStorage.getItem(repsKey);
       const savedWeightsFromStorage = await AsyncStorage.getItem(weightKey);
+      const savedFullSetFromStorage = await AsyncStorage.getItem(fullSetKey);
+      
+      console.log(savedSetsFromStorage);
+
       // If there are saved sets, set them in state
       if (savedSetsFromStorage) {
-        setSavedSets(savedSetsFromStorage);
-      }
+        arr = JSON.parse(savedSetsFromStorage)
+        setSavedSets(arr);
+      } 
       // If there are saved reps, set them in state
       if (savedRepsFromStorage) {
-        setSavedReps(savedRepsFromStorage);
-      }
+        arr = JSON.parse(savedRepsFromStorage)
+        setSavedReps(arr);
+      } 
       // If there are saved weights, set them in state
       if (savedWeightsFromStorage) {
-        setSavedWeights(savedWeightsFromStorage);
+        arr = JSON.parse(savedWeightsFromStorage)
+        setSavedWeights(arr);
+      } 
+      // If there are saved fullSets, set them in state
+      if (savedFullSetFromStorage) {
+        arr = JSON.parse(savedFullSetFromStorage)
+        setSavedFullSet(arr);
       }
-    })();
-  }, []);
 
-  // Handler function to save the reps to storage when the submit button is pressed
+    })();
+  }, [sets, reps, weight]);
+
+  console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights)
+  // Handler function to save the reps to storage when the su bmit button is pressed
   const handleRepSubmit = () => {
-    if (sets === '' || weight === '') {
-      alert('Error: please input values for reps and weight as well');
-      return;
-    }
     // Check if the reps are a number
     if (!isNaN(Number(reps))) {
       // Convert the reps to a string before storing it
@@ -145,10 +169,11 @@ function Exercise(props) {
         alert('Error: reps cannot be empty');
         return;
       }
+      setReps(repsString)
       const curReps = Array.from(savedReps);
       curReps.push(reps);
       // Save the reps to storage
-      AsyncStorage.setItem(repsKey, repsString);
+      AsyncStorage.setItem(repsKey, JSON.stringify(curReps));
       setSavedReps(curReps)
     } else {
       // alert the user if the reps are not a number
@@ -158,10 +183,6 @@ function Exercise(props) {
 
   // Handler function to save the weight to storage when the submit button is pressed
   const handleWeightSubmit = () => {
-    if (reps === '' || sets === '') {
-      alert('Error: please input values for reps and weight as well');
-      return;
-    }
     // Check if the weight are a number
     if (!isNaN(Number(weight))) {
       // Convert the weight to a string before storing it
@@ -175,7 +196,7 @@ function Exercise(props) {
       curWeight.push(weight);
 
       // Save the weight to storage
-      AsyncStorage.setItem(weightKey, weightString);
+      AsyncStorage.setItem(weightKey, JSON.stringify(curWeight));
       setSavedWeights(curWeight)
     } else {
       // alert the user if the weight are not a number
@@ -185,10 +206,6 @@ function Exercise(props) {
 
   // Handler function to save the sets to storage when the submit button is pressed
   const handleSetSubmit = () => {
-    if (reps === '' || weight === '') {
-      alert('Error: please input values for reps and weight as well');
-      return;
-    }
     // Check if the sets are a number
     if (!isNaN(Number(sets))) {
       // Convert the sets to a string before storing it
@@ -198,16 +215,41 @@ function Exercise(props) {
         alert('Error: sets cannot be empty');
         return;
       }    
+      setSets(setsString)
       const curSets = Array.from(savedSets);
-      curSets.push(sets);
+      curSets.push(setsString);
       // Save the sets to storage
-      AsyncStorage.setItem(setKey, setsString);
+      AsyncStorage.setItem(setKey, JSON.stringify(curSets));
       setSavedSets(curSets);
     } else {
       // alert the user if the sets are not a number
       alert('Error: sets must be a number');
     } 
   };
+  let fullSet = { sets: savedSets, reps: savedReps, weight: savedWeights };
+  // Handler function to save the full set to storage when the submit button is pressed
+  const handleFullSetSubmit = () => {
+    if (reps === '' || weight === '' || sets === '') {
+      alert('Error: please input values for reps, weight, and sets');
+      return;
+    }
+    handleSetSubmit();
+    handleRepSubmit();
+    handleWeightSubmit();
+
+
+    fullSet = {
+      sets: savedSets,
+      reps: savedReps,
+      weight: savedWeights,
+    }
+
+    
+    const fullSetString = JSON.stringify(fullSet);
+    console.log(fullSetString)
+  }
+
+  console.log(`full set ${JSON.stringify(fullSet)}`)      
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -224,27 +266,26 @@ function Exercise(props) {
       <TextInput placeholder={`weight as a number ${weight}`} value={weight} onChangeText={setWeight} />
       
       <Button title="Submit Weights" onPress={() => {
-        handleWeightSubmit();
-        handleRepSubmit();
-        handleSetSubmit();
+        console.log("SETS " + savedSets, "REPS " +  savedReps, "WEIGHTS "+ savedWeights)
+        handleFullSetSubmit();
         }} />
 
       {/* Displaying all of the information */}
 
-
-      {/* Display the sets from storage*/}
-      <Text>{savedSets > 0 ? `Saved Sets: ${savedSets}`  : ""}</Text>
-      <Text>{savedReps > 0 ? `Saved Reps: ${savedReps}` : ""}</Text>
-      <Text>{savedWeights > 0 ? `Saved Weight: ${savedWeights}` : ""}</Text>
-     
+      {/* Display 1RM */}
+      
+        
+      {/* Clear all saved items */}
       <Button title="Clear Storage" onPress={
-        () => clearAsyncStorage(clearable)
+        () => clearAsyncStorage(clearable, clearableSaved)
         } />
     </View>
   );
 }
 
-
+function EpleyConversion(set, rep, weight) {
+  return weight * (1 + (rep / 30));
+}
 
 export const styles = StyleSheet.create({
   container: {
