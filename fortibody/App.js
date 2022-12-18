@@ -11,6 +11,8 @@ import { array, string } from 'prop-types';
 const Stack = createStackNavigator();
 
 const placeholder_img = './basketball-placeholder.png';
+const ct_bench_press = './assets/benchpress.jpg';
+
 
 const _exerciseList = [
   "Bench Press",
@@ -53,13 +55,22 @@ function ExerciseListScreen() {
       <Text>Choose an exercise to record:</Text>
       <View>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Bench Press')}
+          onPress={() => navigation.navigate(_exerciseList[0])}
+        >
+          <Image
+            source={require(ct_bench_press)}
+            style={{ width: 200, height: 200}}
+            />
+          <Text>{_exerciseList[0]}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate(_exerciseList[1])}
         >
           <Image
             source={require(placeholder_img)}
             style={{ width: 200, height: 200}}
             />
-          <Text>Bench Press</Text>
+          <Text>{_exerciseList[1]}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -96,6 +107,7 @@ function Exercise(props) {
   const [reps, setReps] = useState(0);
   // State variable to store the weight input by the user
   const [weight, setWeight] = useState(0);
+  const [fullSet, setFullSet] = useState(0);
 
   // State variable to store the reps input by the user
   const [savedSets, setSavedSets] = useState(0);
@@ -113,13 +125,13 @@ function Exercise(props) {
   // list for clearning all saved items
   const clearable = [
     // save each setSaved function to clearable
-    setSets, setReps, setWeight,
+    setSets, setReps, setWeight, 
     // setSavedFullSet,
   ]
 
   const clearableSaved = [
     // save each setSaved function to clearable
-    setSavedSets, setSavedReps, setSavedWeights,
+    setSavedSets, setSavedReps, setSavedWeights, setSavedFullSet
     // setSavedFullSet,
   ]
 
@@ -131,8 +143,6 @@ function Exercise(props) {
       const savedWeightsFromStorage = await AsyncStorage.getItem(weightKey);
       const savedFullSetFromStorage = await AsyncStorage.getItem(fullSetKey);
       
-      console.log(savedSetsFromStorage);
-
       // If there are saved sets, set them in state
       if (savedSetsFromStorage) {
         arr = JSON.parse(savedSetsFromStorage)
@@ -155,9 +165,11 @@ function Exercise(props) {
       }
 
     })();
-  }, [sets, reps, weight]);
+  }, [sets, reps, weight, fullSet]);
 
-  console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights)
+  console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights, "fullSet " + savedFullSet);
+
+  console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights, "fullSet " + savedFullSet);
   // Handler function to save the reps to storage when the su bmit button is pressed
   const handleRepSubmit = () => {
     // Check if the reps are a number
@@ -226,7 +238,7 @@ function Exercise(props) {
       alert('Error: sets must be a number');
     } 
   };
-  let fullSet = { sets: savedSets, reps: savedReps, weight: savedWeights };
+  // let fullSet = { sets: savedSets, reps: savedReps, weight: savedWeights };
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
     if (reps === '' || weight === '' || sets === '') {
@@ -238,18 +250,36 @@ function Exercise(props) {
     handleWeightSubmit();
 
 
-    fullSet = {
-      sets: savedSets,
-      reps: savedReps,
-      weight: savedWeights,
+    const combined = {
+      sets: sets,
+      reps: reps,
+      weight: weight,
     }
 
-    
+    setFullSet(combined);
+    prevFullSet = savedFullSet;
     const fullSetString = JSON.stringify(fullSet);
+
+    AsyncStorage.setItem(fullSetKey, fullSetString);
+    setSavedFullSet(fullSetString);
     console.log(fullSetString)
+    console.log(fullSet)
   }
 
-  console.log(`full set ${JSON.stringify(fullSet)}`)      
+  // function to display the full set
+  const displayFullSet = () => {
+    if (savedFullSet === 0) {
+      return;
+    } else {
+      return (
+        // TODO
+        <View>
+          <Text>Full Set: {savedFullSet}</Text>
+        </View>
+      )
+    }
+  }
+
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -271,7 +301,7 @@ function Exercise(props) {
         }} />
 
       {/* Displaying all of the information */}
-
+      <View>{displayFullSet()}</View>
       {/* Display 1RM */}
       
         
