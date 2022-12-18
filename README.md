@@ -44,3 +44,8 @@ The Design Doc:
       * Use fitness watches to track HR
       
 * In the UI, there will also be a page available for looking at studies for the more curious-minded. 
+
+
+
+### CURRENT TARGET 
+    * simply get the app to have three exercises that can track 1RM

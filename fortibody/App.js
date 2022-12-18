@@ -29,8 +29,8 @@ const generate_exercise_screens = () => {
       </Stack.Screen>
     );
 
-    return screens
   }
+  return screens
 }
 
 export default function App() {
@@ -167,7 +167,6 @@ function Exercise(props) {
     })();
   }, [sets, reps, weight, fullSet]);
 
-  console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights, "fullSet " + savedFullSet);
 
   console.log("sets " + savedSets, "reps " +  savedReps, "weight "+ savedWeights, "fullSet " + savedFullSet);
   // Handler function to save the reps to storage when the su bmit button is pressed
@@ -251,16 +250,17 @@ function Exercise(props) {
 
 
     const combined = {
-      sets: sets,
-      reps: reps,
-      weight: weight,
-    }
+      sets: [...(savedSets ?? []), sets],
+      reps: [...(savedReps ?? []), reps],
+      weight: [...(savedWeights ?? []), weight],
+    };
 
-    setFullSet(combined);
     prevFullSet = savedFullSet;
-    const fullSetString = JSON.stringify(fullSet);
-
-    AsyncStorage.setItem(fullSetKey, fullSetString);
+    const fullSetString = JSON.stringify(combined);
+    
+    console.log(fullSetString)
+    setFullSet(fullSetString);
+    AsyncStorage.setItem(fullSetKey, JSON.stringify(fullSetString));
     setSavedFullSet(fullSetString);
     console.log(fullSetString)
     console.log(fullSet)
@@ -268,16 +268,33 @@ function Exercise(props) {
 
   // function to display the full set
   const displayFullSet = () => {
-    if (savedFullSet === 0) {
-      return;
-    } else {
-      return (
-        // TODO
-        <View>
-          <Text>Full Set: {savedFullSet}</Text>
-        </View>
-      )
-    }
+    let output = []
+      if (typeof(savedFullSet) === 'string') {
+        let prevSetsRepsWeights = JSON.parse(savedFullSet)
+        // loop through the sets, reps, and weights and display them
+        for (let i = 0; i < prevSetsRepsWeights.sets.length; i++) {
+          let [s, r, w] = [parseFloat(prevSetsRepsWeights.sets[i]), parseFloat(prevSetsRepsWeights.reps[i]), parseFloat(prevSetsRepsWeights.weight[i])]
+          output.push (
+            <View key={i}>
+            <Text key={"weights-"+i}>Set: {s} Reps: {r} Weight: {w} lbs</Text>
+            <Text key={"1rm-"+i}>Estimated 1RM: {EpleyConversion(s,r,w).toFixed(2)}</Text>
+            </View>
+          );
+        }
+      } else {
+        return;
+      }
+      return output;
+
+
+      // try {
+      //   let temp = JSON.parse(savedFullSet).sets
+      //   console.log(`type of savedFullSet ${typeof( temp)} and savedFullSet ${temp}`)
+      //   console.log(`savedFullSet ${temp}`)
+      // } 
+      // catch (e) {
+      //   console.log(e)
+      // }
   }
 
 
@@ -301,7 +318,7 @@ function Exercise(props) {
         }} />
 
       {/* Displaying all of the information */}
-      <View>{displayFullSet()}</View>
+      {displayFullSet()}
       {/* Display 1RM */}
       
         
@@ -314,7 +331,7 @@ function Exercise(props) {
 }
 
 function EpleyConversion(set, rep, weight) {
-  return weight * (1 + (rep / 30));
+  return parseFloat(weight * (1 + (rep / 30)));
 }
 
 export const styles = StyleSheet.create({
