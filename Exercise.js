@@ -115,6 +115,7 @@ export function Exercise(props) {
     } else {
       // alert the user if the reps are not a number
       alert('Error: reps must be a number');
+      return;
     }
   };
 
@@ -138,6 +139,7 @@ export function Exercise(props) {
     } else {
       // alert the user if the weight are not a number
       alert('Error: weight must be a number');
+      return;
     }
   };
 
@@ -161,6 +163,7 @@ export function Exercise(props) {
     } else {
       // alert the user if the sets are not a number
       alert('Error: sets must be a number');
+      return;
     }
   };
   // let fullSet = { sets: savedSets, reps: savedReps, weight: savedWeights };
