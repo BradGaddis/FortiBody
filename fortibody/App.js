@@ -6,11 +6,12 @@ import { LoginScreen } from './login';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
+import 'react-native-gesture-handler';
 
 
 const Stack = createStackNavigator();
 
-import placeholder_img from './basketball-placeholder.png';
+import placeholder_img from './assets/basketball-placeholder.png';
 import ct_bench_press from './assets/benchpress.jpg';
 import brian_squat from './assets/squat.jpg';
 import eddie_deadlift from './assets/deadlift.jpg';
@@ -75,9 +76,7 @@ function ExerciseListScreen() {
     <Text>Choose an exercise to record:</Text>
     {ShowExercises(_exercises)}
     {/* Clear all saved items */}
-    <Button title="Clear Storage" onPress={
-        () => clearAsyncStorage(clearable, clearableSaved)
-        } />
+    
     </View>
   );
 }
@@ -335,7 +334,9 @@ function Exercise(props) {
       {displayFullSet()}
       {/* Display 1RM */}
       
-        
+      <Button title="Clear Storage" onPress={
+        () => clearAsyncStorage(clearable, clearableSaved)
+        } />
       
     </View>
   );
