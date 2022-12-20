@@ -47,5 +47,5 @@ The Design Doc:
 
 
 
-### CURRENT TARGET 
-    * simply get the app to have three exercises that can track 1RM
+~~### CURRENT TARGET 
+    * simply get the app to have three exercises that can track 1RM~~
