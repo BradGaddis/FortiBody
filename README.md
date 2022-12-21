@@ -1,10 +1,8 @@
-FortiBody is an app for my personal use for now. 
+FortiBody is presently an app for my personal use for now. 
 
-While it is barely usable at the moment and looks atrocious, this will hopefully be a full start up.
+While it is barely usable at the moment and looks atrocious.
 
-I intend for this to be quite an ambitious project. 
-
-This is inspired by some combination of BodBot and MyFitnessPal
+I intend for this to be quite an ambitious project and this is inspired by some combination of BodBot and MyFitnessPal
 
 The Design Doc:
 
@@ -45,7 +43,3 @@ The Design Doc:
       
 * In the UI, there will also be a page available for looking at studies for the more curious-minded. 
 
-
-
-~~### CURRENT TARGET 
-    * simply get the app to have three exercises that can track 1RM~~
