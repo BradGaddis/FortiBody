@@ -56,11 +56,11 @@ async function clearExerciseData(exerciseName, functions = null, resetSaved = nu
 export function Exercise(props) {
   const name = props.name;
   // State variable to store the sets input by the user
-  const [sets, setSets] = useState(0);
+  const [sets, setSets] = useState('');
   // State variable to store the reps input by the user
-  const [reps, setReps] = useState(0);
+  const [reps, setReps] = useState('');
   // State variable to store the weight input by the user
-  const [weight, setWeight] = useState(0);
+  const [weight, setWeight] = useState('');
   const [fullSet, setFullSet] = useState(0);
 
   // State variable to store the reps input by the user
@@ -122,92 +122,16 @@ export function Exercise(props) {
   }, [sets, reps, weight, fullSet]);
 
 
-  console.log("sets " + savedSets, "reps " + savedReps, "weight " + savedWeights, "fullSet " + savedFullSet);
-  // Handler function to save the reps to storage when the su bmit button is pressed
-  const handleRepSubmit = () => {
-    // Check if the reps are a number
-    if (!isNaN(Number(reps))) {
-      // Convert the reps to a string before storing it
-      const repsString = reps.toString();
-      // check if reps is empty
-      if (reps === '') {
-        alert('Error: reps cannot be empty');
-        return;
-      }
-      setReps(repsString);
-      const curReps = Array.from(savedReps);
-      curReps.push(reps);
-      // Save the reps to storage
-      AsyncStorage.setItem(repsKey, JSON.stringify(curReps));
-      setSavedReps(curReps);
-    } else {
-      // alert the user if the reps are not a number
-      alert('Error: reps must be a number');
-      return;
-    }
-  };
-
-  // Handler function to save the weight to storage when the submit button is pressed
-  const handleWeightSubmit = () => {
-    // Check if the weight are a number
-    if (!isNaN(Number(weight))) {
-      // Convert the weight to a string before storing it
-      const weightString = weight.toString();
-      // check if weight is empty
-      if (weight === '') {
-        alert('Error: weight cannot be empty');
-        return;
-      }
-      const curWeight = Array.from(savedWeights);
-      curWeight.push(weight);
-
-      // Save the weight to storage
-      AsyncStorage.setItem(weightKey, JSON.stringify(curWeight));
-      setSavedWeights(curWeight);
-    } else {
-      // alert the user if the weight are not a number
-      alert('Error: weight must be a number');
-      return;
-    }
-  };
-
-  // Handler function to save the sets to storage when the submit button is pressed
-  const handleSetSubmit = () => {
-    // Check if the sets are a number
-    if (!isNaN(Number(sets))) {
-      // Convert the sets to a string before storing it
-      const setsString = sets.toString();
-      // check if sets is empty
-      if (sets === '') {
-        alert('Error: sets cannot be empty');
-        return;
-      }
-      setSets(setsString);
-      const curSets = Array.from(savedSets);
-      curSets.push(setsString);
-      // Save the sets to storage
-      AsyncStorage.setItem(setKey, JSON.stringify(curSets));
-      setSavedSets(curSets);
-    } else {
-      // alert the user if the sets are not a number
-      alert('Error: sets must be a number');
-      return;
-    }
-  };
-  // let fullSet = { sets: savedSets, reps: savedReps, weight: savedWeights };
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
     if (reps === '' || weight === '' || sets === '') {
       alert('Error: please input values for reps, weight, and sets');
       return;
     }
-    handleSetSubmit();
-    handleRepSubmit();
-    handleWeightSubmit();
 
     let combined = {};
     // check if there is a saved full set
-    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null') {
+    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null' || typeof(savedFullSet) === 'object') {
       // if there is no saved full set, create a new one
       combined = {
         sets: [sets],
