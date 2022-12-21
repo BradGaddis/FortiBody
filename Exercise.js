@@ -4,22 +4,6 @@ import { Text, TextInput, Button, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
 
-async function clearAsyncStorage(functions = null, resetSaved = null) {
-  try {
-    functions.forEach((func) => {
-      func('');
-    });
-    if (resetSaved != null) {
-      resetSaved.forEach((func) => {
-        func([]);
-      });
-    }
-    await AsyncStorage.clear();
-    console.log('AsyncStorage cleared successfully');
-  } catch (e) {
-    console.error('Error clearing AsyncStorage', e);
-  }
-}
 
 async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
   try {
@@ -32,6 +16,7 @@ async function clearExerciseData(exerciseName, functions = null, resetSaved = nu
     await AsyncStorage.removeItem(repsKey);
     await AsyncStorage.removeItem(weightKey);
     await AsyncStorage.removeItem(fullSetKey);
+
     if (functions != null) {
       functions.forEach((func) => {
         func('');
@@ -68,7 +53,7 @@ export function Exercise(props) {
   const [savedReps, setSavedReps] = useState(0);
   const [savedWeights, setSavedWeights] = useState(0);
   const [savedFullSet, setSavedFullSet] = useState(0);
-
+  const [toggleRounded, setToggleRounded] = useState(false);
 
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
   const setKey = name + '-sets';
@@ -76,6 +61,9 @@ export function Exercise(props) {
   const weightKey = name + '-weight';
   const fullSetKey = name + '-fullSet';
 
+
+  const buttonTitle = 'Clear ' + name + ' Exercise';
+  
   // list for clearning all saved items
   const clearable = [
     // save each setSaved function to clearable
@@ -147,6 +135,13 @@ export function Exercise(props) {
         weight: [...prevFullSet.weight, weight],
       };
     }
+
+    // set everything back to an empty string
+    setSets('');
+    setReps('');
+    setWeight('');
+    
+
     // combine the saved full set with the new values
     prevFullSet = savedFullSet;
     const fullSetString = JSON.stringify(combined);
@@ -157,7 +152,7 @@ export function Exercise(props) {
   };
 
   // function to display the full set
-  const displayFullSet = () => {
+  const displayFullSet = (toggled) => {
     // check if there is a saved full set
     if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null' || savedFullSet === 'undefined' || savedFullSet === 'NaN' || savedFullSet === '0') {
       return;
@@ -171,7 +166,7 @@ export function Exercise(props) {
         let [s, r, w] = [parseFloat(prevSetsRepsWeights.sets[i]), parseFloat(prevSetsRepsWeights.reps[i]), parseFloat(prevSetsRepsWeights.weight[i])];
         output.push(
           <View key={i}>
-            <Text key={"weights-" + i}>Set: {s} Reps: {r} Weight: {w} lbs – Estimated 1RM: {EpleyConversion(s, r, w).toFixed(2)}</Text>
+            <Text key={"weights-" + i}>Set: {s} Reps: {r} Weight: {w} lbs – Estimated 1RM: {EpleyConversion(s, r, w, toggled).toFixed(2)}</Text>
           </View>
         );
       }
@@ -186,6 +181,7 @@ export function Exercise(props) {
 
   };
 
+  
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -200,23 +196,32 @@ export function Exercise(props) {
       <TextInput placeholder={`reps as a number ${reps}`} value={reps} onChangeText={setReps} />
 
       <TextInput placeholder={`weight as a number ${weight}`} value={weight} onChangeText={setWeight} />
-
+      
       <Button title="Submit Weights" onPress={() => {
         handleFullSetSubmit();
       }} />
 
       {/* Displaying all of the information */}
       {/* Display 1RM */}
+      <Button title="Toggle Rounded 1RM" onPress={() => {
+        setToggleRounded(!toggleRounded);
+      }} />
       <ScrollView>
-        {displayFullSet()}
+        {displayFullSet(toggleRounded)}
       </ScrollView>
-      <Button title="Clear Exercise Data" onPress={() => clearExerciseData(name, clearable, clearableSaved)} />
+      <Button title={buttonTitle} onPress={() => clearExerciseData(name, clearable, clearableSaved)} />
       
-      <Button title="Clear All Storage" onPress={() => clearAsyncStorage(clearable, clearableSaved)} />
 
     </View>
   );
 }
-function EpleyConversion(set, rep, weight) {
-  return parseFloat(weight * (1 + (rep / 30)));
+function EpleyConversion(set, rep, weight, toggleRounded = false) {
+  if (toggleRounded) {
+    let value = parseFloat(weight * (1 + (rep / 30)));
+    return Math.round(value/5)*5;
+  } 
+  else
+  {
+    return parseFloat(weight * (1 + (rep / 30)));
+  }
 }

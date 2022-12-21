@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image,} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Button} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginScreen } from './login';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -12,6 +12,15 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 
 const Stack = createStackNavigator();
+
+async function clearAsyncStorage() {
+  try {
+    await AsyncStorage.clear();
+    console.log('AsyncStorage cleared successfully');
+  } catch (e) {
+    console.error('Error clearing AsyncStorage', e);
+  }
+}
 
 
 
@@ -68,6 +77,7 @@ function ExerciseListScreen() {
     <Text>Choose an exercise to record:</Text>
     <ScrollView>
     {ShowExercises(_exercises)}
+    <Button title="Clear All Storage" onPress={() => clearAsyncStorage()} />
     </ScrollView>
     </View>
   );
