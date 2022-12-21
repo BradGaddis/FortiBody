@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
 import { Text, TextInput, Button, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { ScrollView } from 'react-native-gesture-handler';
 
 async function clearAsyncStorage(functions = null, resetSaved = null) {
   try {
@@ -19,7 +19,6 @@ async function clearAsyncStorage(functions = null, resetSaved = null) {
   } catch (e) {
     console.error('Error clearing AsyncStorage', e);
   }
-
 }
 
 async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
@@ -61,6 +60,7 @@ export function Exercise(props) {
   const [reps, setReps] = useState('');
   // State variable to store the weight input by the user
   const [weight, setWeight] = useState('');
+
   const [fullSet, setFullSet] = useState(0);
 
   // State variable to store the reps input by the user
@@ -142,21 +142,18 @@ export function Exercise(props) {
       // if there is a saved full set, parse it
       let prevFullSet = JSON.parse(savedFullSet);
       combined = {
-        sets: [prevFullSet.sets, sets],
-        reps: [prevFullSet.reps, reps],
-        weight: [prevFullSet.weight, weight],
+        sets: [...prevFullSet.sets, sets],
+        reps: [...prevFullSet.reps, reps],
+        weight: [...prevFullSet.weight, weight],
       };
     }
     // combine the saved full set with the new values
     prevFullSet = savedFullSet;
     const fullSetString = JSON.stringify(combined);
 
-    console.log(fullSetString);
     setFullSet(fullSetString);
     AsyncStorage.setItem(fullSetKey, JSON.stringify(fullSetString));
     setSavedFullSet(fullSetString);
-    console.log(fullSetString);
-    console.log(fullSet);
   };
 
   // function to display the full set
@@ -174,15 +171,18 @@ export function Exercise(props) {
         let [s, r, w] = [parseFloat(prevSetsRepsWeights.sets[i]), parseFloat(prevSetsRepsWeights.reps[i]), parseFloat(prevSetsRepsWeights.weight[i])];
         output.push(
           <View key={i}>
-            <Text key={"weights-" + i}>Set: {s} Reps: {r} Weight: {w} lbs</Text>
-            <Text key={"1rm-" + i}>Estimated 1RM: {EpleyConversion(s, r, w).toFixed(2)}</Text>
+            <Text key={"weights-" + i}>Set: {s} Reps: {r} Weight: {w} lbs – Estimated 1RM: {EpleyConversion(s, r, w).toFixed(2)}</Text>
           </View>
         );
       }
     } else {
       return;
     }
-    return output;
+    return (
+      <View style={{flexDirection: "column"}}>
+        {output}
+      </View>
+      );
 
   };
 
@@ -202,14 +202,14 @@ export function Exercise(props) {
       <TextInput placeholder={`weight as a number ${weight}`} value={weight} onChangeText={setWeight} />
 
       <Button title="Submit Weights" onPress={() => {
-        console.log("SETS " + savedSets, "REPS " + savedReps, "WEIGHTS " + savedWeights);
         handleFullSetSubmit();
       }} />
 
       {/* Displaying all of the information */}
       {/* Display 1RM */}
-      {displayFullSet()}
-
+      <ScrollView>
+        {displayFullSet()}
+      </ScrollView>
       <Button title="Clear Exercise Data" onPress={() => clearExerciseData(name, clearable, clearableSaved)} />
       
       <Button title="Clear All Storage" onPress={() => clearAsyncStorage(clearable, clearableSaved)} />
