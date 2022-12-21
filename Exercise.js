@@ -22,6 +22,34 @@ async function clearAsyncStorage(functions = null, resetSaved = null) {
 
 }
 
+async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
+  try {
+    const setKey = exerciseName + '-sets';
+    const repsKey = exerciseName + '-reps';
+    const weightKey = exerciseName + '-weight';
+    const fullSetKey = exerciseName + '-fullSet';
+    
+    await AsyncStorage.removeItem(setKey);
+    await AsyncStorage.removeItem(repsKey);
+    await AsyncStorage.removeItem(weightKey);
+    await AsyncStorage.removeItem(fullSetKey);
+    if (functions != null) {
+      functions.forEach((func) => {
+        func('');
+      });
+    }
+      if (resetSaved != null) {
+        resetSaved.forEach((func) => {
+          func([]);
+        });
+      }
+
+    console.log(`Data for exercise ${exerciseName} cleared successfully`);
+  } catch (e) {
+    console.error(`Error clearing data for exercise ${exerciseName}`, e);
+  }
+}
+
 // This is designed to be a generic exercise screen
 // It will be passed the name of the exercise as a prop
 // and will save the sets to the phone's (or computer's) storage
@@ -255,10 +283,12 @@ export function Exercise(props) {
       }} />
 
       {/* Displaying all of the information */}
-      {displayFullSet()}
       {/* Display 1RM */}
+      {displayFullSet()}
 
-      <Button title="Clear Storage" onPress={() => clearAsyncStorage(clearable, clearableSaved)} />
+      <Button title="Clear Exercise Data" onPress={() => clearExerciseData(name, clearable, clearableSaved)} />
+      
+      <Button title="Clear All Storage" onPress={() => clearAsyncStorage(clearable, clearableSaved)} />
 
     </View>
   );

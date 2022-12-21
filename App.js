@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import 'react-native-gesture-handler';
 import { _exercises } from './_exercises';
 import { Exercise } from './Exercise';
+import { ScrollView } from 'react-native-gesture-handler';
 
 
 const Stack = createStackNavigator();
@@ -65,9 +66,9 @@ function ExerciseListScreen() {
   return (
     <View style={styles.container}>
     <Text>Choose an exercise to record:</Text>
+    <ScrollView>
     {ShowExercises(_exercises)}
-    {/* Clear all saved items */}
-    
+    </ScrollView>
     </View>
   );
 }
