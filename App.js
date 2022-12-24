@@ -6,7 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import 'react-native-gesture-handler';
-import { _exercises } from './_exercises';
+import { total_exercises_dict } from './_exercises';
 import { Exercise } from './Exercise';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -26,10 +26,10 @@ async function clearAsyncStorage() {
 
 const generate_exercise_screens = () => {
   let screens = [];
-  for (let i = 0; i < _exercises.length; i++) {
+  for (let i = 0; i < total_exercises_dict.length; i++) {
     screens.push(
-      <Stack.Screen key={_exercises[i].name} name={_exercises[i].name}>
-        {() => <Exercise name={_exercises[i].name} />}
+      <Stack.Screen key={total_exercises_dict[i].name} name={total_exercises_dict[i].name}>
+        {() => <Exercise name={total_exercises_dict[i].name} />}
       </Stack.Screen>
     );
 
@@ -42,14 +42,14 @@ export default function App() {
       <NavigationContainer>
       <Stack.Navigator initialRouteName='Exercise List'>
         {/*populate each exercise screen */}
-        <Stack.Screen name="Exercise List" component={ExerciseListScreen} />
+        <Stack.Screen name="Exercise List" component={ExercisesHome} />
         {generate_exercise_screens()}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-function ShowExercises(exercises) {
+function ShowExercisesGeneral(exercises) {
   const navigation = useNavigation();
   let output = [];
   for (let i = 0; i < exercises.length; i++) {
@@ -68,15 +68,14 @@ function ShowExercises(exercises) {
     );
   }
   return output;
-
 }
 
-function ExerciseListScreen() {
+function ExercisesHome() {
   return (
     <View style={styles.container}>
     <Text>Choose an exercise to record:</Text>
     <ScrollView>
-    {ShowExercises(_exercises)}
+    {ShowExercisesGeneral(total_exercises_dict)}
     <Button title="Clear All Storage" onPress={() => clearAsyncStorage()} />
     </ScrollView>
     </View>

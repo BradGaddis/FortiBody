@@ -3,8 +3,22 @@ import ct_bench_press from './assets/benchpress.jpg';
 import brian_squat from './assets/squat.jpg';
 import eddie_deadlift from './assets/deadlift.jpg';
 
-export const _exercises = [
-  { name: "Bench Press", img: ct_bench_press },
-  { name: "Squat", img: brian_squat },
-  { name: "Deadlift", img: eddie_deadlift },
+
+const exercise_names = [
+  "Bench Press",
+  "Weighted Back Squat",
+  "Deadlift",
+]
+
+export const total_exercises_dict = [
+  { name: exercise_names[0], img: ct_bench_press },
+  { name: exercise_names[1], img: brian_squat },
+  { name: exercise_names[2], img: eddie_deadlift },
 ];
+
+
+export const powerlifting_exercises = [
+  exercise_names[0],
+  exercise_names[1],
+  exercise_names[2],
+]
