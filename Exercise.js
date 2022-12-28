@@ -4,7 +4,7 @@ import { Text, TextInput, Button, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
 
-
+// Clear all data for an exercise and reset the state variables
 async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
   try {
     const setKey = exerciseName + '-sets';
@@ -35,7 +35,6 @@ async function clearExerciseData(exerciseName, functions = null, resetSaved = nu
 }
 
 // This is designed to be a generic exercise screen
-// It will be passed the name of the exercise as a prop
 // and will save the sets to the phone's (or computer's) storage
 export function Exercise(props) {
   const name = props.name;
@@ -49,16 +48,10 @@ export function Exercise(props) {
   const [fullSet, setFullSet] = useState(0);
 
   // State variable to store the reps input by the user
-  const [savedSets, setSavedSets] = useState(0);
-  const [savedReps, setSavedReps] = useState(0);
-  const [savedWeights, setSavedWeights] = useState(0);
   const [savedFullSet, setSavedFullSet] = useState(0);
   const [toggleRounded, setToggleRounded] = useState(false);
 
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
-  const setKey = name + '-sets';
-  const repsKey = name + '-reps';
-  const weightKey = name + '-weight';
   const fullSetKey = name + '-fullSet';
 
 
@@ -73,33 +66,14 @@ export function Exercise(props) {
 
   const clearableSaved = [
     // save each setSaved function to clearable
-    setSavedSets, setSavedReps, setSavedWeights, setSavedFullSet
+    setSavedFullSet
     // setSavedFullSet,
   ];
 
   // Retrieve the sets from storage when the component mounts
   useEffect(() => {
     (async () => {
-      const savedSetsFromStorage = await AsyncStorage.getItem(setKey);
-      const savedRepsFromStorage = await AsyncStorage.getItem(repsKey);
-      const savedWeightsFromStorage = await AsyncStorage.getItem(weightKey);
       const savedFullSetFromStorage = await AsyncStorage.getItem(fullSetKey);
-
-      // If there are saved sets, set them in state
-      if (savedSetsFromStorage) {
-        arr = JSON.parse(savedSetsFromStorage);
-        setSavedSets(arr);
-      }
-      // If there are saved reps, set them in state
-      if (savedRepsFromStorage) {
-        arr = JSON.parse(savedRepsFromStorage);
-        setSavedReps(arr);
-      }
-      // If there are saved weights, set them in state
-      if (savedWeightsFromStorage) {
-        arr = JSON.parse(savedWeightsFromStorage);
-        setSavedWeights(arr);
-      }
       // If there are saved fullSets, set them in state
       if (savedFullSetFromStorage) {
         arr = JSON.parse(savedFullSetFromStorage);
@@ -107,7 +81,7 @@ export function Exercise(props) {
       }
 
     })();
-  }, [sets, reps, weight, fullSet]);
+  }, [fullSet]);
 
 
   // Handler function to save the full set to storage when the submit button is pressed
@@ -161,6 +135,7 @@ export function Exercise(props) {
     let output = [];
     if (typeof (savedFullSet) === 'string') {
       let prevSetsRepsWeights = JSON.parse(savedFullSet);
+
       // loop through the sets, reps, and weights and display them
       for (let i = 0; i < prevSetsRepsWeights.sets.length; i++) {
         let [s, r, w] = [parseFloat(prevSetsRepsWeights.sets[i]), parseFloat(prevSetsRepsWeights.reps[i]), parseFloat(prevSetsRepsWeights.weight[i])];
