@@ -7,14 +7,8 @@ import { ScrollView } from 'react-native-gesture-handler';
 // Clear all data for an exercise and reset the state variables
 async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
   try {
-    const setKey = exerciseName + '-sets';
-    const repsKey = exerciseName + '-reps';
-    const weightKey = exerciseName + '-weight';
     const fullSetKey = exerciseName + '-fullSet';
     
-    await AsyncStorage.removeItem(setKey);
-    await AsyncStorage.removeItem(repsKey);
-    await AsyncStorage.removeItem(weightKey);
     await AsyncStorage.removeItem(fullSetKey);
 
     if (functions != null) {
@@ -24,7 +18,7 @@ async function clearExerciseData(exerciseName, functions = null, resetSaved = nu
     }
       if (resetSaved != null) {
         resetSaved.forEach((func) => {
-          func([]);
+          func('');
         });
       }
 
@@ -76,8 +70,7 @@ export function Exercise(props) {
       const savedFullSetFromStorage = await AsyncStorage.getItem(fullSetKey);
       // If there are saved fullSets, set them in state
       if (savedFullSetFromStorage) {
-        arr = JSON.parse(savedFullSetFromStorage);
-        setSavedFullSet(arr);
+        setSavedFullSet(JSON.parse(savedFullSetFromStorage));
       }
 
     })();
@@ -92,8 +85,9 @@ export function Exercise(props) {
     }
 
     let combined = {};
+    let prevFullSet;
     // check if there is a saved full set
-    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null' || typeof(savedFullSet) === 'object') {
+    if (!savedFullSet || !Object.keys(savedFullSet).length || !typeof savedFullSet === 'object' || !typeof savedFullSet === 'string') {
       // if there is no saved full set, create a new one
       combined = {
         sets: [sets],
@@ -102,7 +96,7 @@ export function Exercise(props) {
       };
     } else {
       // if there is a saved full set, parse it
-      let prevFullSet = JSON.parse(savedFullSet);
+      prevFullSet = JSON.parse(savedFullSet);
       combined = {
         sets: [...prevFullSet.sets, sets],
         reps: [...prevFullSet.reps, reps],
@@ -115,9 +109,7 @@ export function Exercise(props) {
     setReps('');
     setWeight('');
     
-
     // combine the saved full set with the new values
-    prevFullSet = savedFullSet;
     const fullSetString = JSON.stringify(combined);
 
     setFullSet(fullSetString);
@@ -128,12 +120,23 @@ export function Exercise(props) {
   // function to display the full set
   const displayFullSet = (toggled) => {
     // check if there is a saved full set
-    if (!savedFullSet || savedFullSet === '[]' || savedFullSet === 'null' || savedFullSet === 'undefined' || savedFullSet === 'NaN' || savedFullSet === '0') {
+    if (!savedFullSet) {
       return;
     }
 
     let output = [];
     if (typeof (savedFullSet) === 'string') {
+      
+      // TODO 
+      // check if the saved full set is empty
+      if (savedFullSet === '' || savedFullSet === '0' || savedFullSet === 'null' || savedFullSet === 'undefined' || savedFullSet === 'NaN' || savedFullSet === '[]')   { 
+        return (
+          <View>
+          <Text>There is no saved full set</Text>
+        </View>
+        );
+      }
+
       let prevSetsRepsWeights = JSON.parse(savedFullSet);
 
       // loop through the sets, reps, and weights and display them
@@ -184,13 +187,17 @@ export function Exercise(props) {
       <ScrollView>
         {displayFullSet(toggleRounded)}
       </ScrollView>
-      <Button title={buttonTitle} onPress={() => clearExerciseData(name, clearable, clearableSaved)} />
+      <Button title={buttonTitle} onPress={() =>
+      {  
+        clearExerciseData(name, clearable, clearableSaved)
+      }  
+      } />
       
 
     </View>
   );
 }
-function EpleyConversion(set, rep, weight, toggleRounded = false) {
+function EpleyConversion(set, rep, weight, toggleRounded = true) {
   if (toggleRounded) {
     let value = parseFloat(weight * (1 + (rep / 30)));
     return Math.round(value/5)*5;
