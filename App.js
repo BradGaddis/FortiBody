@@ -12,7 +12,10 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { PowerLiftingExercises } from './PowerLifter';
 import { GeneralExercises } from './GeneralExercises';
 import { styles } from './styles';
+import { placholderImage } from './assets/basketball-placeholder.png';
+import { Fasting  } from './Fasting';
 
+let dietImage = placholderImage;
 
 const Stack = createStackNavigator();
 
@@ -44,10 +47,12 @@ export default function App() {
       <NavigationContainer>
       <Stack.Navigator initialRouteName='Exercise List'>
         {/*populate each exercise screen */}
-        <Stack.Screen name="Exercise List" component={ExercisesHome} />
+        <Stack.Screen name="Exercise List" component={AppHome} />
         {generate_exercise_screens()}
         <Stack.Screen name="General Exercises" component={GeneralExercises} />
         <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} />
+        <Stack.Screen name="Diet" component={Diet} />
+        <Stack.Screen name="Fasting" component={Fasting} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -55,7 +60,7 @@ export default function App() {
 
 
 
-function ExercisesHome() {
+function AppHome() {
   const navigation = useNavigation();
   return (
     <View style={styles.container}>
@@ -68,13 +73,32 @@ function ExercisesHome() {
     {/* <PowerLiftingExercises /> */}
     <Button title="Powerlifting Exercises" onPress={() => navigation.navigate('Powerlifting Exercises')} />
 
+    <DietDisplay />
     <Button style={{}} title="Clear All Storage" onPress={() => clearAsyncStorage()} />
     </ScrollView>
     </View>
   );
 }
 
+// Set up screens for diet and fasting
+function DietDisplay() {
+  const navigation = useNavigation();
+
+  return (
+    <Button title="Diet" onPress={() => navigation.navigate('Diet')} />
+  );
+}
 
 
+function Diet() {
+  const navigation = useNavigation();
+
+  return (
+    <View style={styles.container}>
+      <Text>Fasting</Text>
+      <Button title="Start Fasting" onPress={() => navigation.navigate('Fasting')} />
+    </View>
+  );
+}
 
 

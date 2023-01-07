@@ -28,6 +28,23 @@ async function clearExerciseData(exerciseName, functions = null, resetSaved = nu
   }
 }
 
+
+async function removeSet(arr,id, key, resetSaved = null) {
+  console.log(id)
+  resetSaved("");
+  await AsyncStorage.removeItem(key)
+  // remove elements from array of ojects by id   
+
+  const filtered = arr.filter(function(value, index, arr){
+    return value.id !== id;
+  });
+  console.log(filtered)
+  await AsyncStorage.setItem(key, JSON.stringify(filtered));
+  resetSaved(filtered )
+}
+
+
+
 // This is designed to be a generic exercise screen
 // and will save the sets to the phone's (or computer's) storage
 export function Exercise(props) {
@@ -39,10 +56,10 @@ export function Exercise(props) {
   // State variable to store the weight input by the user
   const [weight, setWeight] = useState('');
 
-  const [fullSet, setFullSet] = useState(0);
+  const [fullSet, setFullSet] = useState([]);
 
   // State variable to store the reps input by the user
-  const [savedFullSet, setSavedFullSet] = useState(0);
+  const [savedFullSet, setSavedFullSet] = useState([]);
   const [toggleRounded, setToggleRounded] = useState(false);
 
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
@@ -87,34 +104,32 @@ export function Exercise(props) {
     let combined = {};
     let prevFullSet;
     // check if there is a saved full set
-    if (!savedFullSet || !Object.keys(savedFullSet).length || !typeof savedFullSet === 'object' || !typeof savedFullSet === 'string') {
+    if (!savedFullSet || !Object.keys(savedFullSet).length || !typeof savedFullSet === 'object' || !typeof savedFullSet === 'string' || !typeof savedFullSet === 'number') {
       // if there is no saved full set, create a new one
-      combined = {
-        sets: [sets],
-        reps: [reps],
-        weight: [weight],
-      };
+      combined = [{
+        id: Date.now(),
+        sets: sets,
+        reps: reps,
+        weight: weight,
+      }];
     } else {
       // if there is a saved full set, parse it
       prevFullSet = JSON.parse(savedFullSet);
-      combined = {
-        sets: [...prevFullSet.sets, sets],
-        reps: [...prevFullSet.reps, reps],
-        weight: [...prevFullSet.weight, weight],
-      };
+      combined = [...prevFullSet, {id: Date.now(), sets: sets, reps: reps, weight: weight}];
     }
 
     // set everything back to an empty string
     setSets('');
     setReps('');
     setWeight('');
+
     
     // combine the saved full set with the new values
     const fullSetString = JSON.stringify(combined);
 
     setFullSet(fullSetString);
-    AsyncStorage.setItem(fullSetKey, JSON.stringify(fullSetString));
     setSavedFullSet(fullSetString);
+    AsyncStorage.setItem(fullSetKey, JSON.stringify(fullSetString));
   };
 
   // function to display the full set
@@ -129,24 +144,15 @@ export function Exercise(props) {
       
       // TODO 
       // check if the saved full set is empty
-      if (savedFullSet === '' || savedFullSet === '0' || savedFullSet === 'null' || savedFullSet === 'undefined' || savedFullSet === 'NaN' || savedFullSet === '[]')   { 
-        return (
-          <View>
-          <Text>There is no saved full set</Text>
-        </View>
-        );
-      }
-
       let prevSetsRepsWeights = JSON.parse(savedFullSet);
-
       // loop through the sets, reps, and weights and display them
-      for (let i = 0; i < prevSetsRepsWeights.sets.length; i++) {
-        let [s, r, w] = [parseFloat(prevSetsRepsWeights.sets[i]), parseFloat(prevSetsRepsWeights.reps[i]), parseFloat(prevSetsRepsWeights.weight[i])];
+      for (let i = 0; i < prevSetsRepsWeights.length; i++) {
         output.push(
-          <View key={i}>
-            <Text key={"weights-" + i}>Set: {s} Reps: {r} Weight: {w} lbs – Estimated 1RM: {EpleyConversion(s, r, w, toggled).toFixed(2)}</Text>
-          </View>
-        );
+          <View key={prevSetsRepsWeights[i].id}>
+            <Text>Set: {prevSetsRepsWeights[i].sets} | Reps: {prevSetsRepsWeights[i].reps} | Weight: {prevSetsRepsWeights[i].weight} |  Est. 1RM: {EpleyConversion(prevSetsRepsWeights[i].sets, prevSetsRepsWeights[i].reps, prevSetsRepsWeights[i].weight, toggled)}</Text>
+            <Button title="Remove Set" onPress={() => removeSet(prevSetsRepsWeights ,prevSetsRepsWeights[i].id, fullSetKey, setFullSet)} />
+            </View>
+        )
       }
     } else {
       return;
@@ -204,6 +210,6 @@ function EpleyConversion(set, rep, weight, toggleRounded = true) {
   } 
   else
   {
-    return parseFloat(weight * (1 + (rep / 30)));
+    return parseFloat(weight * (1 + (rep / 30)).toFixed(2));
   }
 }
