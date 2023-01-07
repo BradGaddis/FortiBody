@@ -42,5 +42,7 @@ The Design Doc:
 * In the UI, there will also be a page available for looking at studies for the more curious-minded. 
 
 ## CURRENT OBJECTIVE:
-* Add a screen for differentiating between powerlifting and not powerlifting
-* Add a fasting timer
+* Add a calorie tracker
+* Add love letters to components
+~~* Add a screen for differentiating between powerlifting and not powerlifting~~
+~~* Add a fasting timer~~
