@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
-import { Text, TextInput, Button, View } from 'react-native';
+import { Text, TextInput, Button, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -101,6 +101,19 @@ export function Exercise(props) {
       return;
     }
 
+    // Check if each input is a number
+    if (isNaN(reps) || isNaN(weight) || isNaN(sets)) {
+      Alert.alert('Error: please input numbers for reps, weight, and sets');
+      return;
+    }
+
+    // Add warning alert with continue button if reps is more than weight
+    if (reps > weight) {
+      alert(
+        'Warning\nThe number of reps is greater than the weight.')
+      return;
+    }
+
     let combined = {};
     let prevFullSet;
     // check if there is a saved full set
@@ -180,7 +193,7 @@ export function Exercise(props) {
 
       <TextInput placeholder={`reps as a number ${reps}`} value={reps} onChangeText={setReps} />
 
-      <TextInput placeholder={`weight as a number ${weight}`} value={weight} onChangeText={setWeight} />
+      <TextInput placeholder={`weight as a number ${weight}`}  value={weight} onChangeText={setWeight} />
       
       <Button title="Submit Weights" onPress={() => {
         handleFullSetSubmit();
