@@ -42,6 +42,8 @@ function useStopwatch() {
 
   // Saves the time to memory that timer started
   const [savedTime, setSavedTime] = useState(0)
+  
+  const [isRunning, setIsRunning] = useState(false);
 
   // Retrieve the elapsed time from storage when the component mounts
   useEffect(() => {
@@ -52,6 +54,7 @@ function useStopwatch() {
           setIsRunning(true);
           const prevTime = await AsyncStorage.getItem(TIME_KEY)
           const curTime = moment.parseZone(Date(Date.now()))
+          setSavedTime(prevTime)
           elapsedTimeString = curTime.diff(moment(prevTime), "seconds").toString()
           // print everything for debug
           console.log("prev: ", prevTime, " cur ", curTime)
@@ -65,7 +68,6 @@ function useStopwatch() {
 
     retrieveElapsedTime();
   }, []);
-  const [isRunning, setIsRunning] = useState(false);
 
   // Update the elapsed time every second when the stopwatch is running  
   useEffect(() => {
@@ -107,16 +109,12 @@ function useStopwatch() {
     stop();
   }
 
-  return { elapsedTime, isRunning, start, stop, reset };
+  return { elapsedTime, isRunning, start, stop, reset, savedTime};
 }
 
 
-function Stopwatch() {
-  const { elapsedTime, isRunning, start, stop, reset } = useStopwatch();
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [isBackgroundTaskRunning, setIsBackgroundTaskRunning] = useState(false);
-  const [backgroundTaskName, setBackgroundTaskName] = useState(null);
-  const [backgroundTaskError, setBackgroundTaskError] = useState(null);
+function Stopwatch( ) {
+  const { elapsedTime, isRunning, start, stop, reset, savedTime } = useStopwatch();
 
   let elapsedTimeString;
 
@@ -151,8 +149,9 @@ function Stopwatch() {
   }
 
   return (
-    <View>
+    <View style={{alignItems:"center"}}>
       <Text>{elapsedTimeString}</Text>
+      <Text>{savedTime ? "You started at " + savedTime : "Timer Not Started"}</Text>
       {isRunning ? (
         <Button title="Pause" onPress={stop} />
       ) : (
@@ -166,7 +165,7 @@ function Stopwatch() {
 
 export function Fasting() {
   return (
-    <View>
+    <View >
       <Stopwatch />
     </View>
   );
