@@ -28,7 +28,8 @@ const backgroundTask = async () => {
 };
 
 async function SaveTime() {
-  const time = Date(Date.now()).toString()
+  let time = new Date(Date.now())
+  time = time.toUTCString()
   await AsyncStorage.setItem(TIME_KEY, time);
   console.log("starting timer at: ", time)
 }
@@ -50,8 +51,8 @@ function useStopwatch() {
         if (parseFloat(elapsedTimeString) > 0) {
           setIsRunning(true);
           const prevTime = await AsyncStorage.getItem(TIME_KEY)
-          const curTime = Date(Date.now())
-          elapsedTimeString = moment(curTime).diff(moment(prevTime), "seconds").toString()
+          const curTime = moment.parseZone(Date(Date.now()))
+          elapsedTimeString = curTime.diff(moment(prevTime), "seconds").toString()
           // print everything for debug
           console.log("prev: ", prevTime, " cur ", curTime)
           console.log(elapsedTimeString)
@@ -117,7 +118,37 @@ function Stopwatch() {
   const [backgroundTaskName, setBackgroundTaskName] = useState(null);
   const [backgroundTaskError, setBackgroundTaskError] = useState(null);
 
-  const elapsedTimeString = moment.utc(elapsedTime * 1000).format('HH:mm:ss');
+  let elapsedTimeString;
+
+  switch (true) {
+    case elapsedTime < 10:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('s');
+      break;
+    case elapsedTime < 60:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('ss');
+      break
+    case elapsedTime < 60 * 10:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('m:ss');
+      break
+    case elapsedTime < 60 * 60:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('mm:ss');
+      break;
+    case elapsedTime < 60 * 60 * 10:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('H:mm:ss');
+      break;
+    case elapsedTime < 60 * 60 * 24:
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format('HH:mm:ss');
+      break;
+    default:
+      // Pass as many days that have elapsed into moment.utc format string
+      const daysPassed = elapsedTime % (60 * 60 * 24)
+      let daysArr = [];
+      for (let i = 0; i < daysPassed; i++) {
+        daysArr.push("D");
+      }
+      const daysString = daysArr.join("");
+      elapsedTimeString = moment.utc(elapsedTime * 1000).format(daysString + ':HH:mm:ss');
+  }
 
   return (
     <View>
