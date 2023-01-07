@@ -44,5 +44,6 @@ The Design Doc:
 ## CURRENT OBJECTIVE:
 * Add a calorie tracker
 * Add love letters to components
+* **ADD STYLES** 
 ~~* Add a screen for differentiating between powerlifting and not powerlifting~~
 ~~* Add a fasting timer~~
