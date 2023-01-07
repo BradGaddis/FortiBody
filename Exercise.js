@@ -150,7 +150,8 @@ export function Exercise(props) {
         output.push(
           <View key={prevSetsRepsWeights[i].id}>
             <Text>Set: {prevSetsRepsWeights[i].sets} | Reps: {prevSetsRepsWeights[i].reps} | Weight: {prevSetsRepsWeights[i].weight} |  Est. 1RM: {EpleyConversion(prevSetsRepsWeights[i].sets, prevSetsRepsWeights[i].reps, prevSetsRepsWeights[i].weight, toggled)}</Text>
-            <Button title="Remove Set" onPress={() => removeSet(prevSetsRepsWeights ,prevSetsRepsWeights[i].id, fullSetKey, setFullSet)} />
+            {/* <Button title="Remove Set" onPress={() => removeSet(prevSetsRepsWeights ,prevSetsRepsWeights[i].id, fullSetKey, setFullSet)} /> */} 
+            
             </View>
         )
       }
