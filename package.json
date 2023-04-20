@@ -1,35 +1,26 @@
 {
-  "name": "fortibody",
-  "version": "1.0.2",
-  "main": "node_modules/expo/AppEntry.js",
+  "name": "new",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@expo/webpack-config": "^0.17.2",
-    "@react-native-async-storage/async-storage": "github:react-native-community/async-storage",
-    "@react-native-community/masked-view": "^0.1.11",
-    "@react-navigation/native": "^6.1.0",
-    "@react-navigation/stack": "^6.3.8",
-    "eas-cli": "^3.1.1",
-    "expo": "~47.0.8",
-    "expo-status-bar": "~1.4.2",
-    "moment": "^2.29.4",
-    "react": "18.1.0",
-    "react-dom": "18.1.0",
-    "react-native": "0.70.5",
-    "react-native-crypto": "^2.2.0",
-    "react-native-gesture-handler": "^2.8.0",
-    "react-native-reanimated": "^2.13.0",
-    "react-native-safe-area-context": "^4.4.1",
-    "react-native-screens": "^3.18.2",
-    "react-native-web": "~0.18.9"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.9"
-  },
-  "private": true
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react-swc": "^3.0.0",
+    "eslint": "^8.38.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.3.4",
+    "vite": "^4.3.0"
+  }
 }
