@@ -48,4 +48,18 @@ nav {
   align-items: center;
   padding: 1rem 0;
   text-decoration: none;
+  /* align everything absolutely to the top of page */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* make it full width */
+  width: 100%;
+  
+}
+
+nav li {
+  display: inline-block;
+  margin: 0 1rem;
+  text-decoration: none;
 }
