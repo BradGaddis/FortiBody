@@ -16,7 +16,6 @@ function App() {
           <Navbar />
 
           <Routes>
-            {/* Other routes */}
             <Route path="/" element={<Home />} />
             <Route path="/bmr" element={<BMRPage />} />
           </Routes>
@@ -34,7 +33,10 @@ const Home = () => {
       <p>...let's not lie. It's all round. Let's change it — the belly part anyway...</p>
       <p>And the moon is made of cheese</p>
 
-      Coming Soon
+      <h2><strong>Coming Soon</strong></h2>
+
+
+      <section>You are your body. You are free. We don't charge for anything.</section>
     </>
   )
 }
