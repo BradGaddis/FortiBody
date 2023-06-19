@@ -16,6 +16,7 @@ export function GeneralExercises() : any {
   type Exercise = {
     name: string;
     img: any;
+    id: string;
   };
   
   type Props = {
@@ -28,7 +29,7 @@ export function GeneralExercises() : any {
 
     return exercises.map((exercise) => (
         <TouchableOpacity
-          key={exercise.name}
+          key={exercise.id}
           onPress={() => navigation.navigate(exercise.name)}
         >
           <Image

@@ -1,4 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Stack } from '@react-navigation/native';
+import { Exercise } from './Exercise';
+import { total_exercises_dict } from './exercise_store';
 
 export async function clearAsyncStorage() {
     try {
@@ -13,7 +16,7 @@ let exerciseId = 0;
 
 export function generateExerciseId() {
   exerciseId += 1;
-  return exerciseId;
+  return exerciseId.toString();
 }
 
 // Clear all data for an exercise and reset the state variables
@@ -50,3 +53,5 @@ export function EpleyConversion(set: object, rep : number, weight : number, togg
     return parseFloat(weight * (1 + (rep / 30)).toFixed(2));
   }
 }
+
+

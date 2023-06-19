@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, TextInput, Button, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
-import { clearExerciseData, EpleyConversion } from './_clearExerciseData';
+import { clearExerciseData, EpleyConversion } from './utils';
 
 
 // move into function
@@ -22,6 +22,8 @@ async function removeSet(arr,id, key, resetSaved = null) {
 }
 
 
+
+// This cluster-fuck needs to be cleaned up...
 
 // This is designed to be a generic exercise screen
 // and will save the sets to the phone's (or computer's) storage
