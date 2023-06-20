@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { GeneralExercises } from './GeneralExercises';
 import Home from './Home';
 import { useNavigation } from '@react-navigation/native';
-import { clearAsyncStorage } from './utils';
+import { clearAllAsyncStorage } from './utils';
 import {  Text, View, ScrollView, Button } from 'react-native';
 import { total_exercises_dict } from './exercise_store';
 import { Exercise } from './Exercise';
@@ -17,7 +17,7 @@ export default function App() {
       <Stack.Navigator initialRouteName='Exercise List'>
         {/*populate each exercise screen */}
         <Stack.Screen name="Exercise List" component={Home} />
-        { generate_exercise_screens(Stack) }
+        { generate_exercise_screens() }
          <Stack.Screen name="General Exercises" component={GeneralExercises} />
         {/* <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} /> */}
         {/* <Stack.Screen name="Diet" component={Diet} /> */}

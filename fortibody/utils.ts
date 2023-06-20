@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack } from '@react-navigation/native';
 import { Exercise } from './Exercise';
 import { total_exercises_dict } from './exercise_store';
+import { View, Text } from 'react-native';
 
-export async function clearAsyncStorage() {
+export async function clearAllAsyncStorage() {
     try {
       await AsyncStorage.clear();
       console.log('AsyncStorage cleared successfully');
@@ -20,38 +20,22 @@ export function generateExerciseId() {
 }
 
 // Clear all data for an exercise and reset the state variables
-export async function clearExerciseData(exerciseName : string, functions = null, resetSaved = null) {
+export async function clearExerciseData(exerciseName : string, key: string) {
   try {
-    const fullSetKey = exerciseName + '-fullSet';
-    
-    await AsyncStorage.removeItem(fullSetKey);
-
-    if (functions != null) {
-      functions.forEach((func) => {
-        func('');
-      });
-    }
-      if (resetSaved != null) {
-        resetSaved.forEach((func) => {
-          func('');
-        });
-      }
-
+    await AsyncStorage.removeItem(key);
     console.log(`Data for exercise ${exerciseName} cleared successfully`);
   } catch (e) {
     console.error(`Error clearing data for exercise ${exerciseName}`, e);
   }
 }
 
-export function EpleyConversion(set: object, rep : number, weight : number, toggleRounded : boolean = true) {
+export function EpleyConversion(set: string, rep : string, weight : string, toggleRounded : boolean = true) {
+  let value = parseFloat(weight) * (1 + (parseFloat(rep) / 30));
   if (toggleRounded) {
-    let value = parseFloat(weight * (1 + (rep / 30)));
     return Math.round(value/5)*5;
   } 
   else
   {
-    return parseFloat(weight * (1 + (rep / 30)).toFixed(2));
+    return value;
   }
 }
-
-

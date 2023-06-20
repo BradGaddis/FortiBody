@@ -1,7 +1,9 @@
-import { StyleSheet, Text, View, ScrollView, Button } from 'react-native';
+import { StyleSheet, Text, View, Button } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { clearAsyncStorage } from './utils';
+import { clearAllAsyncStorage } from './utils';
 import { GeneralExercises } from './GeneralExercises';
+import { ScrollView } from 'react-native-gesture-handler';
+
 
 function Home() {
     const navigation = useNavigation();
@@ -16,8 +18,8 @@ function Home() {
           {/* <PowerLiftingExercises /> */}
           {/* <Button title="Powerlifting Exercises" onPress={() => navigation.navigate('Powerlifting Exercises')} /> */}
       
-          <Button title="Clear All Storage" onPress={() => clearAsyncStorage()} />
         </ScrollView>
+        <Button style={{bottom: 0}} title="Clear All Storage" onPress={() => clearAllAsyncStorage()} />
       </View>
     );
   }
