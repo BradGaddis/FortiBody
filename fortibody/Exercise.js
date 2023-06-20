@@ -71,10 +71,8 @@ export function Exercise(props) {
 
   // move into function
   function removeSet(savedItems,id) {
-    AsyncStorage.removeItem(key)
     // remove elements from array of ojects by id   
     const filtered = savedItems.filter(item => item.id !== id);
-    console.log(filtered)
     AsyncStorage.setItem(key, JSON.stringify(filtered));
     setSaved(filtered);
   }

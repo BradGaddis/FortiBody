@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "fortibody",
-    "slug": "fortibody",
-    "version": "1.0.0",
+    "name": "FortiBody",
+    "slug": "FortiBody",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
