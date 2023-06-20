@@ -20,16 +20,16 @@ export function Exercise(props) {
   
   // Retrieve the sets from storage when the component mounts
   useEffect(() => {
-    (async () => {
-      const savedSets = await getFromStorage(key);
+    () => {
+      const savedSets = getFromStorage(key);
       if (savedSets) {
         setSaved(savedSets);
       }
-    })()
+    }
   }, [saved]);
 
   // Handler function to save the full set to storage when the submit button is pressed
-  async function handleSubmit() {
+  function handleSubmit() {
     if (reps === '' || weight === '' || setNum === '') {
       alert('Error: please input values for reps, weight, and sets');
       return;
@@ -65,18 +65,17 @@ export function Exercise(props) {
       }
      )
     console.log("saved set" + saved)
-    cd 
-    await saveToStorage(key, combined)
+    saveToStorage(key, combined)
     setCombined(fullSet);
   }
 
   // move into function
-  async function removeSet(savedItems,id) {
-    await AsyncStorage.removeItem(key)
+  function removeSet(savedItems,id) {
+    AsyncStorage.removeItem(key)
     // remove elements from array of ojects by id   
     const filtered = savedItems.filter(item => item.id !== id);
     console.log(filtered)
-    await AsyncStorage.setItem(key, JSON.stringify(filtered));
+    AsyncStorage.setItem(key, JSON.stringify(filtered));
     setSaved(filtered);
   }
 
@@ -137,17 +136,17 @@ export function Exercise(props) {
   );
 }
 
-async function saveToStorage(key, obj =null) {
+function saveToStorage(key, obj =null) {
   if (obj === null) {
     alert('Error: nothing to save');
     return;
   }
-  await AsyncStorage.setItem(key, JSON.stringify(obj));
+  AsyncStorage.setItem(key, JSON.stringify(obj));
 }
 
 
-async function getFromStorage(key) {
-  const item = await AsyncStorage.getItem(key);
+function getFromStorage(key) {
+  const item = AsyncStorage.getItem(key);
   const output = item ? JSON.parse(item) : null;
   return output;
 }
