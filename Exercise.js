@@ -4,6 +4,10 @@ import { Text, TextInput, Button, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
 
+
+// TODO change states to numbers
+
+
 // Clear all data for an exercise and reset the state variables
 async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
   try {
