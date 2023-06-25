@@ -20,21 +20,33 @@ export function Exercise({name}) {
   const buttonTitle = 'Clear ' + name + ' Exercise';
 
   useEffect(() => {
-    const fetchData = async () => {
+     (async () => {
       try {
-        const value = await JSON.parse(getSavedSets(key));
-        if (value !== null) {
+        const value = await (getSavedSets(key));
+        console.log(value)
+        if (value != null) {
           setSaved(JSON.parse(value));
+          console.log("value was saved to inital state")
         }
       } catch (error) {
         // Error retrieving data
         console.log("no data", error);
-        // alert("Error retrieving data", error);
       }
-    };
-  
-    fetchData();
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await saveSets(key, saved);
+      } catch (error) {
+        // Error saving data
+        console.log("no data saved", error);
+        alert("Error saving data", error);
+      } 
+    })();
   }, [saved]);
+
   
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
@@ -50,15 +62,7 @@ export function Exercise({name}) {
       return;
     }
 
-    
     const full = combineSets(setNum, reps, weight);
-    
-    // Save the full set to storage
-    console.log("just after log" , full)
-
-    saveSets(key, full);
-
-    console.log("gets saved?")
 
     setSaved((prev) => {
       if (!prev) {
@@ -67,7 +71,6 @@ export function Exercise({name}) {
         return [...prev, full];
       }
     });
-    console.log("got saved", saved)
     
     setSetNums(0);
     setReps(0);
@@ -75,7 +78,7 @@ export function Exercise({name}) {
   };
 
   function removeSet(id) {
-    const filtered = saved.filter((item) => item.id !== id);
+    const filtered = saved.filter((item, index) => index !== id);
     console.log(filtered)
     setSaved(filtered);
     saveSets(key, filtered);
@@ -88,15 +91,14 @@ export function Exercise({name}) {
       return <Text>No saved sets</Text>;
     }
   
-    console.log("display", saved);
     return (
       <View>
-        {saved.map((item) => {
+        {saved.map((item, index) => {
           return (
-            <View key={item.id}>
+            <View key={index}>
               <Text>Sets: {item.sets} | reps: {item.reps} | weight: {item.weight} | Est. 1RM: {EpleyConversion(item.sets, item.reps, item.weight, toggled)}</Text>
               <Button title="Remove Set" onPress={() => {
-                removeSet(item.id);
+                removeSet(index);
               }} />
             </View>
           );
@@ -157,6 +159,5 @@ function combineSets(setNum, reps, weight) {
     reps: reps,
     weight: weight
   };
-  console.log("combined " , combined);
   return combined;
 }
