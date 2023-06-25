@@ -13,19 +13,9 @@ export function GeneralExercises({ navigation } : { navigation: any }) {
     );
   }
 
-  type Exercise = {
-    name: string;
-    img: any;
-    id: string;
-  };
+
   
-  type Props = {
-    exercises: Exercise[];
-  };
-  
-  function ShowExercisesGeneral(props: any) {
-    const { exercises, navigation } = props;
-    
+  function ShowExercisesGeneral({ exercises, navigation }) {
     return (
       <View style={{
         flex: 1,

@@ -1,233 +1,162 @@
-import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
-import { Text, TextInput, Button, View, Alert } from 'react-native';
+import { Text, Button, View, Alert, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
-
-
-// TODO change states to numbers
-
-
-// Clear all data for an exercise and reset the state variables
-async function clearExerciseData(exerciseName, functions = null, resetSaved = null) {
-  try {
-    const fullSetKey = exerciseName + '-fullSet';
-    
-    await AsyncStorage.removeItem(fullSetKey);
-
-    if (functions != null) {
-      functions.forEach((func) => {
-        func('');
-      });
-    }
-      if (resetSaved != null) {
-        resetSaved.forEach((func) => {
-          func('');
-        });
-      }
-
-    console.log(`Data for exercise ${exerciseName} cleared successfully`);
-  } catch (e) {
-    console.error(`Error clearing data for exercise ${exerciseName}`, e);
-  }
-}
-
-
-async function removeSet(arr,id, key, resetSaved = null) {
-  console.log(id)
-  resetSaved("");
-  await AsyncStorage.removeItem(key)
-  // remove elements from array of ojects by id   
-
-  const filtered = arr.filter(function(value, index, arr){
-    return value.id !== id;
-  });
-  console.log(filtered)
-  await AsyncStorage.setItem(key, JSON.stringify(filtered));
-  resetSaved(filtered )
-}
-
-
+import { EpleyConversion, clearExerciseData, generateExerciseId } from './utils';
 
 // This is designed to be a generic exercise screen
-// and will save the sets to the phone's (or computer's) storage
-export function Exercise(props) {
-  const name = props.name;
-  // State variable to store the sets input by the user
-  const [sets, setSets] = useState('');
-  // State variable to store the reps input by the user
-  const [reps, setReps] = useState('');
-  // State variable to store the weight input by the user
-  const [weight, setWeight] = useState('');
-
-  const [fullSet, setFullSet] = useState([]);
+export function Exercise({name}) {
+  const [setNum, setSetNums] = useState(0);
+  const [reps, setReps] = useState(0);
+  const [weight, setWeight] = useState(0);
 
   // State variable to store the reps input by the user
-  const [savedFullSet, setSavedFullSet] = useState([]);
-  const [toggleRounded, setToggleRounded] = useState(false);
+  const [saved, setSaved] = useState(null);
+  
+  const [toggleRounded, setToggleRounded] = useState(true);
 
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
-  const fullSetKey = name + '-fullSet';
-
-
+  const key = name + '-key';
   const buttonTitle = 'Clear ' + name + ' Exercise';
-  
-  // list for clearning all saved items
-  const clearable = [
-    // save each setSaved function to clearable
-    setSets, setReps, setWeight,
-    // setSavedFullSet,
-  ];
 
-  const clearableSaved = [
-    // save each setSaved function to clearable
-    setSavedFullSet
-    // setSavedFullSet,
-  ];
-
-  // Retrieve the sets from storage when the component mounts
   useEffect(() => {
-    (async () => {
-      const savedFullSetFromStorage = await AsyncStorage.getItem(fullSetKey);
-      // If there are saved fullSets, set them in state
-      if (savedFullSetFromStorage) {
-        setSavedFullSet(JSON.parse(savedFullSetFromStorage));
+    const fetchData = async () => {
+      try {
+        const value = await JSON.parse(getSavedSets(key));
+        if (value !== null) {
+          setSaved(JSON.parse(value));
+        }
+      } catch (error) {
+        // Error retrieving data
+        console.log("no data", error);
+        // alert("Error retrieving data", error);
       }
-
-    })();
-  }, [fullSet]);
-
-
+    };
+  
+    fetchData();
+  }, [saved]);
+  
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
-    if (reps === '' || weight === '' || sets === '') {
-      alert('Error: please input values for reps, weight, and sets');
-      return;
-    }
-
-    // Check if each input is a number
-    if (isNaN(reps) || isNaN(weight) || isNaN(sets)) {
-      Alert.alert('Error: please input numbers for reps, weight, and sets');
-      return;
-    }
-
-    // Add warning alert with continue button if reps is more than weight
-    if (reps > weight) {
+    // Add warning alert with continue button if Alertreps is more than weight
+    if (parseFloat(reps) > parseFloat(weight)) {
       alert(
         'Warning\nThe number of reps is greater than the weight.')
       return;
     }
 
-    let combined = {};
-    let prevFullSet;
-    // check if there is a saved full set
-    if (!savedFullSet || !Object.keys(savedFullSet).length || !typeof savedFullSet === 'object' || !typeof savedFullSet === 'string' || !typeof savedFullSet === 'number') {
-      // if there is no saved full set, create a new one
-      combined = [{
-        id: Date.now(),
-        sets: sets,
-        reps: reps,
-        weight: weight,
-      }];
-    } else {
-      // if there is a saved full set, parse it
-      prevFullSet = JSON.parse(savedFullSet);
-      combined = [...prevFullSet, {id: Date.now(), sets: sets, reps: reps, weight: weight}];
+    if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
+      alert("Warning\nPlease enter a value for reps and weight.")
+      return;
     }
 
-    // set everything back to an empty string
-    setSets('');
-    setReps('');
-    setWeight('');
-
     
-    // combine the saved full set with the new values
-    const fullSetString = JSON.stringify(combined);
+    const full = combineSets(setNum, reps, weight);
+    
+    // Save the full set to storage
+    console.log("just after log" , full)
 
-    setFullSet(fullSetString);
-    setSavedFullSet(fullSetString);
-    AsyncStorage.setItem(fullSetKey, JSON.stringify(fullSetString));
+    saveSets(key, full);
+
+    console.log("gets saved?")
+
+    setSaved((prev) => {
+      if (!prev) {
+        return [full];
+      } else {
+        return [...prev, full];
+      }
+    });
+    console.log("got saved", saved)
+    
+    setSetNums(0);
+    setReps(0);
+    setWeight(0);
   };
 
+  function removeSet(id) {
+    const filtered = saved.filter((item) => item.id !== id);
+    console.log(filtered)
+    setSaved(filtered);
+    saveSets(key, filtered);
+  }
+  
   // function to display the full set
   const displayFullSet = (toggled) => {
     // check if there is a saved full set
-    if (!savedFullSet) {
-      return;
+    if (!saved || saved.length === 0) {
+      return <Text>No saved sets</Text>;
     }
-
-    let output = [];
-    if (typeof (savedFullSet) === 'string') {
-      
-      // TODO 
-      // check if the saved full set is empty
-      let prevSetsRepsWeights = JSON.parse(savedFullSet);
-      // loop through the sets, reps, and weights and display them
-      for (let i = 0; i < prevSetsRepsWeights.length; i++) {
-        output.push(
-          <View key={prevSetsRepsWeights[i].id}>
-            <Text>Set: {prevSetsRepsWeights[i].sets} | Reps: {prevSetsRepsWeights[i].reps} | Weight: {prevSetsRepsWeights[i].weight} |  Est. 1RM: {EpleyConversion(prevSetsRepsWeights[i].sets, prevSetsRepsWeights[i].reps, prevSetsRepsWeights[i].weight, toggled)}</Text>
-            {/* <Button title="Remove Set" onPress={() => removeSet(prevSetsRepsWeights ,prevSetsRepsWeights[i].id, fullSetKey, setFullSet)} /> */} 
-            
-            </View>
-        )
-      }
-    } else {
-      return;
-    }
+  
+    console.log("display", saved);
     return (
-      <View style={{flexDirection: "column"}}>
-        {output}
+      <View>
+        {saved.map((item) => {
+          return (
+            <View key={item.id}>
+              <Text>Sets: {item.sets} | reps: {item.reps} | weight: {item.weight} | Est. 1RM: {EpleyConversion(item.sets, item.reps, item.weight, toggled)}</Text>
+              <Button title="Remove Set" onPress={() => {
+                removeSet(item.id);
+              }} />
+            </View>
+          );
+        })}
       </View>
-      );
-
+    );
   };
 
-  
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text>{name} Screen</Text>
+        <Text>Input Sets Here</Text>
 
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <StatusBar style="auto" />
-      <Text>{name} Screen</Text>
-      <Text>Input Sets Here</Text>
+        {/* The text inputs and save buttons */}
+        <TextInput placeholder={`sets as a number ${setNum}`} value={setNum} onChangeText={setSetNums} />
 
-      {/* The text inputs and save buttons */}
+        <TextInput placeholder={`reps as a number ${reps}`} value={reps} onChangeText={setReps} />
 
-      <TextInput placeholder={`sets as a number ${sets}`} value={sets} onChangeText={setSets} />
+        <TextInput placeholder={`weight as a number ${weight}`}  value={weight} onChangeText={setWeight} />
+        
+        <Button title="Submit Weights" onPress={() => {
+          handleFullSetSubmit();
+        }} />
 
-      <TextInput placeholder={`reps as a number ${reps}`} value={reps} onChangeText={setReps} />
-
-      <TextInput placeholder={`weight as a number ${weight}`}  value={weight} onChangeText={setWeight} />
-      
-      <Button title="Submit Weights" onPress={() => {
-        handleFullSetSubmit();
-      }} />
-
-      {/* Displaying all of the information */}
-      {/* Display 1RM */}
-      <Button title="Toggle Rounded 1RM" onPress={() => {
-        setToggleRounded(!toggleRounded);
-      }} />
-      <ScrollView>
-        {displayFullSet(toggleRounded)}
-      </ScrollView>
-      <Button title={buttonTitle} onPress={() =>
-      {  
-        clearExerciseData(name, clearable, clearableSaved)
-      }  
-      } />
-      
-
-    </View>
+        {/* Displaying all of the information */}
+        {/* Display 1RM */}
+        <Button title="Toggle Rounded 1RM" onPress={() => {
+          setToggleRounded(!toggleRounded);
+        }} />
+        <ScrollView>
+          {displayFullSet(toggleRounded)}
+        </ScrollView>
+        <Button title={buttonTitle} onPress={() =>
+        {  
+          clearExerciseData(key, setSaved);
+        }  
+        } />
+        
+      </View>
   );
 }
-function EpleyConversion(set, rep, weight, toggleRounded = true) {
-  if (toggleRounded) {
-    let value = parseFloat(weight * (1 + (rep / 30)));
-    return Math.round(value/5)*5;
-  } 
-  else
-  {
-    return parseFloat(weight * (1 + (rep / 30)).toFixed(2));
-  }
+
+async function getSavedSets(key) {
+  const items = await AsyncStorage.getItem(key);
+  console.log("retriving sets: ", items)
+  return items;
+}
+
+async function saveSets(key, items) {
+  console.log("save sets ", items)
+  return await AsyncStorage.setItem(key, JSON.stringify(items));
+}
+
+function combineSets(setNum, reps, weight) {
+  const combined = {
+    id: generateExerciseId(),
+    sets: setNum,
+    reps: reps,
+    weight: weight
+  };
+  console.log("combined " , combined);
+  return combined;
 }
