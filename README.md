@@ -44,6 +44,7 @@ The Design Doc:
 
 ## CURRENT OBJECTIVE:
 * Add a calorie tracker
+  * Revisit BMR Calculator
 * Add love letters to components
 * **ADD STYLES** 
 * ~~Add a screen for differentiating between powerlifting and not powerlifting~~
