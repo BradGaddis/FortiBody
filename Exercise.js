@@ -88,7 +88,17 @@ export function Exercise({name}) {
   const displayFullSet = (toggled) => {
     // check if there is a saved full set
     if (!saved || saved.length === 0) {
-      return <Text>No saved sets</Text>;
+      return (
+      <View style={
+        {
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }
+      }>
+        <Text>No saved sets</Text>
+      </View>
+      )
     }
   
     return (
@@ -111,10 +121,24 @@ export function Exercise({name}) {
   function onChangedSetNum({target}) {
 
   }
+  function onChangedReps({target}) {
+
+  }
+  function onChangedSetWeight({target}) {
+
+  }
+
 
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ 
+      flex: 1, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      marginTop: 20,
+      margin: 10,
+    }}
+     >
       <Text>{name} Screen</Text>
       <Text>Input Sets Here</Text>
 
@@ -142,19 +166,29 @@ export function Exercise({name}) {
       maxLength={4}
       />
       
-      <Button title="Submit Weights" onPress={() => {
+      <Button style={{
+        padding: 20,
+      }} title="Submit Weights" onPress={() => {
         handleFullSetSubmit();
       }} />
 
       {/* Displaying all of the information */}
       {/* Display 1RM */}
-      <Button title="Toggle Rounded 1RM" onPress={() => {
+      <Button style={
+        {
+          padding: 20,
+        }
+      } title="Toggle Rounded 1RM" onPress={() => {
         setToggleRounded(!toggleRounded);
       }} />
       <ScrollView>
         {displayFullSet(toggleRounded)}
       </ScrollView>
-      <Button title={buttonTitle} onPress={() =>
+      <Button style={{
+        padding: 20,
+        maxWidth: 100,
+        fontSize: "10em",
+      }} title={buttonTitle} onPress={() =>
       {  
         clearExerciseData(key, setSaved);
       }  
