@@ -170,3 +170,5 @@ export function Fasting() {
     </View>
   );
 }
+
+export default Fasting
