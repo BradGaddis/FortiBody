@@ -7,25 +7,6 @@ import { BackgroundTask } from 'expo';
 const STOPWATCH_KEY = '@stopwatch';
 const TIME_KEY = '@timekey'
 
-// Define a background task that increments the elapsed time every second
-const backgroundTask = async () => {
-  console.log('Background task started');
-  // Run the task every second
-  const intervalId = setInterval(async () => {
-    try {
-      // Retrieve the elapsed time from storage
-      const elapsedTimeString = await AsyncStorage.getItem(STOPWATCH_KEY);
-      let elapsedTime = Number(elapsedTimeString);
-      // Increment the elapsed time by 1
-      elapsedTime++;
-      // Save the new elapsed time to storage
-      await AsyncStorage.setItem(STOPWATCH_KEY, String(elapsedTime));
-      console.log(`Elapsed time incremented to: ${elapsedTime}`);
-    } catch (e) {
-      console.error(`Error in background task: ${e}`);
-    }
-  }, 1000);
-};
 
 async function SaveTime() {
   let time = new Date(Date.now())
@@ -47,7 +28,7 @@ function useStopwatch() {
 
   // Retrieve the elapsed time from storage when the component mounts
   useEffect(() => {
-    async function retrieveElapsedTime() {
+    (async () => {
       try {
         let elapsedTimeString = await AsyncStorage.getItem(STOPWATCH_KEY);
         if (parseFloat(elapsedTimeString) > 0) {
@@ -65,8 +46,7 @@ function useStopwatch() {
         console.error(`Error retrieving elapsed time: ${e}`);
       }
     }
-
-    retrieveElapsedTime();
+    )();
   }, []);
 
   // Update the elapsed time every second when the stopwatch is running  
@@ -75,22 +55,19 @@ function useStopwatch() {
       const intervalId = setInterval(() => {
         setElapsedTime(prevTime => prevTime + 1);
       }, 1000);
-
       return () => clearInterval(intervalId);
     }
   }, [isRunning]);
 
   // Save the elapsed time to storage whenever it changes
   useEffect(() => {
-    async function saveElapsedTime() {
+    (async () => {
       try {
         await AsyncStorage.setItem(STOPWATCH_KEY, String(elapsedTime));
       } catch (e) {
         console.error(`Error saving elapsed time: ${e}`);
       }
-    }
-
-    saveElapsedTime();
+    })();
   }, [elapsedTime]);
 
 
