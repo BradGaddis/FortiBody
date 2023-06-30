@@ -5,18 +5,6 @@ import moment from 'moment/moment';
 
 const TIME_KEY = '@start_time'
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    },
-  button: {
-    padding: "20px",
-    margin: 100,
-    }
-  }
-);
 
 async function SaveTime() {
   let time = new Date(Date.now())
@@ -68,18 +56,24 @@ function useStopwatch() {
 
   // Update the elapsed time every second when the stopwatch is running  
   useEffect(() => {
-    let intervalId
-    (async () => { 
-      if (isRunning) {
-        intervalId = setInterval(async () => {
-          const diff = await GetTimeDiff();
-          setElapsedTime(diff);
-        }, 1000);
-      }
+    if (isRunning) {
+      const intervalId = setInterval(() => {
+        setElapsedTime(prevTime => prevTime + 1);
+      }, 1000);
+      return () => clearInterval(intervalId);
     }
-    )();
-    return () => clearInterval(intervalId);
   }, [isRunning]);
+
+  // Save the elapsed time to storage whenever it changes
+  useEffect(() => {
+    (async () => {
+      try {
+        await AsyncStorage.setItem(STOPWATCH_KEY, String(elapsedTime));
+      } catch (e) {
+        console.error(`Error saving elapsed time: ${e}`);
+      }
+    })();
+  }, [elapsedTime]);
 
 
   function start() {
