@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment/moment';
 
+const STOPWATCH_KEY = '@stopwatch';
 const TIME_KEY = '@start_time'
 
 
@@ -13,12 +14,14 @@ async function SaveTime() {
   console.log("starting timer at: ", time)
 }
 
+
 async function ClearTime(){
   await AsyncStorage.removeItem(TIME_KEY);
 }
 
 async function GetStartTime(){
   let time = await AsyncStorage.getItem(TIME_KEY);
+  console.log("time: ", time)
   return time
 }
 
@@ -26,6 +29,7 @@ async function GetTimeDiff() {
   const prevTime = await GetStartTime();
   const curTime = moment.parseZone(Date(Date.now()));
   const timeDiff = Number(curTime.diff(moment(prevTime), "seconds").toString());
+  console.log("time diff: ", timeDiff);
   return isNaN(timeDiff) ? 0 : timeDiff;
 }
 
@@ -41,6 +45,7 @@ function useStopwatch() {
       try {
         const storedTime = await GetStartTime();
         GetTimeDiff()
+        console.log("elapsed time: ", storedTime)
         if (storedTime != null) {
           setIsRunning(true);
           setSavedTime(storedTime)
@@ -56,24 +61,18 @@ function useStopwatch() {
 
   // Update the elapsed time every second when the stopwatch is running  
   useEffect(() => {
-    if (isRunning) {
-      const intervalId = setInterval(() => {
-        setElapsedTime(prevTime => prevTime + 1);
-      }, 1000);
-      return () => clearInterval(intervalId);
-    }
-  }, [isRunning]);
-
-  // Save the elapsed time to storage whenever it changes
-  useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem(STOPWATCH_KEY, String(elapsedTime));
-      } catch (e) {
-        console.error(`Error saving elapsed time: ${e}`);
+    let intervalId
+    (async () => { 
+      if (isRunning) {
+        intervalId = setInterval(async () => {
+          const diff = await GetTimeDiff();
+          setElapsedTime(diff);
+        }, 1000);
       }
-    })();
-  }, [elapsedTime]);
+    }
+    )();
+    return () => clearInterval(intervalId);
+  }, [isRunning]);
 
 
   function start() {
