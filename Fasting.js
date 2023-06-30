@@ -2,10 +2,9 @@ import { Text, View, Button } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment/moment';
-import { BackgroundTask } from 'expo';
 
 const STOPWATCH_KEY = '@stopwatch';
-const TIME_KEY = '@timekey'
+const TIME_KEY = '@start_time'
 
 
 async function SaveTime() {
@@ -14,34 +13,44 @@ async function SaveTime() {
   await AsyncStorage.setItem(TIME_KEY, time);
   console.log("starting timer at: ", time)
 }
+
 async function ClearTime(){
   await AsyncStorage.removeItem(TIME_KEY);
 }
 
+async function GetStartTime(){
+  let time = await AsyncStorage.getItem(TIME_KEY);
+  console.log("time: ", time)
+  return time
+}
+
+async function GetTimeDiff() {
+  const prevTime = await GetStartTime();
+  const curTime = moment.parseZone(Date(Date.now()));
+  const timeDiff = Number(curTime.diff(moment(prevTime), "seconds").toString());
+  console.log("time diff: ", timeDiff);
+  return isNaN(timeDiff) ? 0 : timeDiff;
+}
+
+
 function useStopwatch() {
   const [elapsedTime, setElapsedTime] = useState(0);
-
-  // Saves the time to memory that timer started
   const [savedTime, setSavedTime] = useState(0)
-  
   const [isRunning, setIsRunning] = useState(false);
 
   // Retrieve the elapsed time from storage when the component mounts
   useEffect(() => {
     (async () => {
       try {
-        let elapsedTimeString = await AsyncStorage.getItem(STOPWATCH_KEY);
-        if (parseFloat(elapsedTimeString) > 0) {
+        const storedTime = await GetStartTime();
+        GetTimeDiff()
+        console.log("elapsed time: ", storedTime)
+        if (storedTime != null) {
           setIsRunning(true);
-          const prevTime = await AsyncStorage.getItem(TIME_KEY)
-          const curTime = moment.parseZone(Date(Date.now()))
-          setSavedTime(prevTime)
-          elapsedTimeString = curTime.diff(moment(prevTime), "seconds").toString()
-          // print everything for debug
-          console.log("prev: ", prevTime, " cur ", curTime)
-          console.log(elapsedTimeString)
+          setSavedTime(storedTime)
+          const diff = GetTimeDiff()
+          setElapsedTime(diff);
         }
-        setElapsedTime(Number(elapsedTimeString));
       } catch (e) {
         console.error(`Error retrieving elapsed time: ${e}`);
       }
@@ -51,24 +60,18 @@ function useStopwatch() {
 
   // Update the elapsed time every second when the stopwatch is running  
   useEffect(() => {
-    if (isRunning) {
-      const intervalId = setInterval(() => {
-        setElapsedTime(prevTime => prevTime + 1);
-      }, 1000);
-      return () => clearInterval(intervalId);
-    }
-  }, [isRunning]);
-
-  // Save the elapsed time to storage whenever it changes
-  useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem(STOPWATCH_KEY, String(elapsedTime));
-      } catch (e) {
-        console.error(`Error saving elapsed time: ${e}`);
+    let intervalId
+    (async () => { 
+      if (isRunning) {
+        intervalId = setInterval(async () => {
+          const diff = await GetTimeDiff();
+          setElapsedTime(diff);
+        }, 1000);
       }
-    })();
-  }, [elapsedTime]);
+    }
+    )();
+    return () => clearInterval(intervalId);
+  }, [isRunning]);
 
 
   function start() {
