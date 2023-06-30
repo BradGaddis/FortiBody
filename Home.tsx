@@ -3,17 +3,7 @@ import { clearAllAsyncStorage } from './utils';
 import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import CustomButton from './Components/CustomButton';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-})
 
 function Home({ navigation } : { navigation: any })  {
  
@@ -27,7 +17,8 @@ function Home({ navigation } : { navigation: any })  {
     
         {/* <PowerLiftingExercises /> */}
         {/* <Button title="Powerlifting Exercises" onPress={() => navigation.navigate('Powerlifting Exercises')} /> */}
-        <CustomButton title="Fasting Timer" onPress={() => navigation.navigate('Fasting')} />
+        <Button title="Fasting" onPress={() => navigation.navigate('Fasting')} />
+
 
       </ScrollView>
       <Button title="Clear All Storage" onPress={() => clearAllAsyncStorage()} />
