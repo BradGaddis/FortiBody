@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment/moment';
 
-const STOPWATCH_KEY = '@stopwatch';
 const TIME_KEY = '@start_time'
 
 
@@ -20,7 +19,6 @@ async function ClearTime(){
 
 async function GetStartTime(){
   let time = await AsyncStorage.getItem(TIME_KEY);
-  console.log("time: ", time)
   return time
 }
 
@@ -28,7 +26,6 @@ async function GetTimeDiff() {
   const prevTime = await GetStartTime();
   const curTime = moment.parseZone(Date(Date.now()));
   const timeDiff = Number(curTime.diff(moment(prevTime), "seconds").toString());
-  console.log("time diff: ", timeDiff);
   return isNaN(timeDiff) ? 0 : timeDiff;
 }
 
@@ -44,7 +41,6 @@ function useStopwatch() {
       try {
         const storedTime = await GetStartTime();
         GetTimeDiff()
-        console.log("elapsed time: ", storedTime)
         if (storedTime != null) {
           setIsRunning(true);
           setSavedTime(storedTime)
@@ -77,6 +73,9 @@ function useStopwatch() {
   function start() {
     setIsRunning(true);
     SaveTime()
+    if (elapsedTime === 0) {
+      setSavedTime(new Date(Date.now()).toUTCString())
+    }
   }
 
   function stop() {
@@ -87,6 +86,7 @@ function useStopwatch() {
   function reset() {
     setElapsedTime(0);
     stop();
+    setSavedTime("")
   }
 
   return { elapsedTime, isRunning, start, stop, reset, savedTime};
