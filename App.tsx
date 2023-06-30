@@ -2,12 +2,13 @@ import React from 'react';
 import { SafeAreaView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { GeneralExercises } from './Exercise/GeneralExercises';
-import { total_exercises_dict } from './Exercise/exercise_store';
-import { Exercise } from './Exercise/Exercise';
+import { GeneralExercises } from './GeneralExercises';
+import { total_exercises_dict } from './exercise_store';
+import { Exercise } from './Exercise';
 import  Home  from './Home';
 import Fasting from './Fasting';
-import { ExerciseSettings } from './Exercise/Settings';
+import { StyleSheet } from 'react-native';
+
 
 const Stack = createStackNavigator();
 // options={{"headerShown": false}
@@ -28,7 +29,6 @@ export default function App() {
           {/* <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} /> */}
           {/* <Stack.Screen name="Diet" component={Diet} /> */}
           <Stack.Screen name="Fasting" component={Fasting} /> 
-          <Stack.Screen name="Exercise Settings" component={ExerciseSettings} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
