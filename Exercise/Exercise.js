@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, Button, View, Alert, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
-import { EpleyConversion, clearExerciseData, generateExerciseId } from './utils';
+import { EpleyConversion, clearExerciseData, generateExerciseId } from '../utils';
 
 // This is designed to be a generic exercise screen
 export function Exercise({name}) {
@@ -194,7 +194,7 @@ export function Exercise({name}) {
       }  
       } />
     </View>
-);
+  );
 }
 
 async function getSavedSets(key) {
@@ -218,38 +218,4 @@ function combineSets(setNum, reps, weight) {
   return combined;
 }
 
-
-function RenderExercise({name, buttonTitle, key, saved, setSaved, setSetNums, setReps, setWeight, setToggleRounded, toggleRounded, setNum, reps, weight, handleFullSetSubmit, displayFullSet}) {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>{name} Screen</Text>
-      <Text>Input Sets Here</Text>
-
-      {/* The text inputs and save buttons */}
-      <TextInput placeholder={`sets as a number ${setNum}`} value={setNum} onChangeText={setSetNums} />
-
-      <TextInput placeholder={`reps as a number ${reps}`} value={reps} onChangeText={setReps} />
-
-      <TextInput placeholder={`weight as a number ${weight}`}  value={weight} onChangeText={setWeight} />
-      
-      <Button title="Submit Weights" onPress={() => {
-        handleFullSetSubmit();
-      }} />
-
-      {/* Displaying all of the information */}
-      {/* Display 1RM */}
-      <Button title="Toggle Rounded 1RM" onPress={() => {
-        setToggleRounded(!toggleRounded);
-      }} />
-      <ScrollView>
-        {displayFullSet(toggleRounded)}
-      </ScrollView>
-      <Button title={buttonTitle} onPress={() =>
-      {  
-        clearExerciseData(key, setSaved);
-      }  
-      } />
-      
-    </View>
-);
-}
+export default Exercise;
