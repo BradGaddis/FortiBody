@@ -10,7 +10,7 @@ export async function clearAllAsyncStorage() {
   }
 
 let exerciseId = 0;
-
+// This needs work. Perhaps I need to save and load the IDs or use some other library
 export function generateExerciseId() {
   exerciseId += 1;
   return exerciseId.toString();
