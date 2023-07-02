@@ -3,7 +3,16 @@ import { clearAllAsyncStorage } from './utils';
 import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import CustomButton from './Components/CustomButton';
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
+})
 
 function Home({ navigation } : { navigation: any })  {
  
@@ -17,9 +26,9 @@ function Home({ navigation } : { navigation: any })  {
     
         {/* <PowerLiftingExercises /> */}
         {/* <Button title="Powerlifting Exercises" onPress={() => navigation.navigate('Powerlifting Exercises')} /> */}
-        <Button title="Fasting" onPress={() => navigation.navigate('Fasting')} />
+        <CustomButton title="Fasting" onPress={() => navigation.navigate('Fasting')} />
 
-
+        <CustomButton title={"Test button"}/> 
       </ScrollView>
       <Button title="Clear All Storage" onPress={() => clearAllAsyncStorage()} />
     </View>
