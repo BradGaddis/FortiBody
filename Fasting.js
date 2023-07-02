@@ -1,10 +1,22 @@
-import { Text, View, Button } from 'react-native';
+import { Text, View, Button, StyleSheet } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment/moment';
 
 const TIME_KEY = '@start_time'
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    },
+  button: {
+    padding: "20px",
+    margin: 100,
+    }
+  }
+);
 
 async function SaveTime() {
   let time = new Date(Date.now())
@@ -132,12 +144,23 @@ function Stopwatch( ) {
     <View style={{alignItems:"center"}}>
       <Text>{elapsedTimeString}</Text>
       <Text>{savedTime ? "You started at " + savedTime : "Timer Not Started"}</Text>
-      {isRunning ? (
-        <Button title="Pause" onPress={stop} />
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+      }}>
+
+      { isRunning ? (
+        <Button style={
+          styles.button
+        } title="Pause" onPress={stop} />
       ) : (
-        <Button title="Start" onPress={start} />
+        <Button
+          style={styles.button}
+        title="Start" onPress={start} />
       )}
-      <Button title="Reset" onPress={reset} />
+      <Button style={styles.button} title="Reset" onPress={reset} />
+      </View>
+      <Text style={{fontSize: 20, padding: 50 ,fontWeight: "bold", alignContent: "center"}}>As scripted so far, this is just a timer that you can use to record the last time that you had a meal.</Text>
     </View>
   );
 }
