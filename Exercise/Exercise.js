@@ -1,56 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Text, Button, View, Alert, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, Button, View, Alert, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView } from 'react-native-gesture-handler';
 import { EpleyConversion, clearExerciseData, generateExerciseId } from '../utils';
-import CustomButton from '../Components/CustomButton';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  cog: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    zIndex: 1,
-  },
-});
-
-let startSessionNum = 0;
-
-//TODO separate the rendering functions into their own components in a separate file
 
 // This is designed to be a generic exercise screen
-export function Exercise({name, navigation}) {
+export function Exercise({name}) {
+  const [setNum, setSetNums] = useState(0);
   const [reps, setReps] = useState(0);
   const [weight, setWeight] = useState(0);
-  const [sessionActive, setSessionActive] = useState(false);
-  const [showReps , setShowReps] = useState(false);
 
   // State variable to store the reps input by the user
   const [saved, setSaved] = useState(null);
-  const [savedSessions, setSavedSessions] = useState(null);
   
   const [toggleRounded, setToggleRounded] = useState(true);
 
   // Use the name of the exercise as the key for storing and retrieving the sets from storage
-  const listedKey = name + '-keylist';
-  const groupedKey = name + '-keygroup';
-  // const clearButtonTitle = 'Clear ' + name + ' Session';
+  const key = name + '-key';
+  const buttonTitle = 'Clear ' + name + ' Exercise';
 
   useEffect(() => {
      (async () => {
       try {
-        const savedSessVal = await (getSavedSessions(groupedKey));
-        
-        if (savedSessVal != null) {
-          setSavedSessions(JSON.parse(savedSessVal));
-          // console.log("value was saved to inital state", savedSessVal)
-        } 
-
+        const value = await (getSavedSets(key));
+        console.log(value)
+        if (value != null) {
+          setSaved(JSON.parse(value));
+          console.log("value was saved to inital state")
+        }
       } catch (error) {
         // Error retrieving data
         console.log("no data", error);
@@ -58,81 +35,34 @@ export function Exercise({name, navigation}) {
     })();
   }, []);
 
-
-
-  useEffect(() => {
-    (async () => {
-     try {
-       const savedListVal = await (getSavedSets(listedKey));
-       if (savedListVal != null) {
-         setSaved(JSON.parse(savedListVal));
-         console.log("value was saved to inital state", savedListVal)
-       }
-     } catch (error) {
-       // Error retrieving data
-       console.log("no data", error);
-     }
-   })();
- }, []);
-
   useEffect(() => {
     (async () => {
       try {
-        if (sessionActive) {
-          startSessionNum = saved ? saved.length : 0;
-        } else {
-          const currentSession = saved.slice(startSessionNum, saved.length); // should throw an error on first pass
-          
-          if (currentSession.length == 0) {
-            console.log("nothing to add")
-            return;
-          }
-          setSavedSessions((prev) => {
-            if (!prev) {
-              // console.log("no prev")
-              return [currentSession];
-            } else{
-              // console.log("prev", prev)
-              return [...prev, currentSession];
-            }
-          });
-        }
+        await saveSets(key, saved);
       } catch (error) {
         // Error saving data
-        console.log("no data in sessionActive useEffect", error);
-      }
-    })()
-  }, [sessionActive]);
-  
-  
-    useEffect(() => {
-      (async () => {
-        try {
-          // console.log("saving sets to storage", saved)
-          if (saved != null)  await saveSets(listedKey, saved);
-        } catch (error) {
-          // Error saving data
-          console.log("no data saved", error);
-          alert("Error saving data in saved useEffect", error);
-        } 
-      try {
-        console.log("saving sets to storage", savedSessions)
-        await saveSessions(groupedKey, savedSessions);
-      } catch (error) {
-        // Error saving data
-        console.log("no data saved in savedSession useEffect", error);
-      }
-    })()
-  }, [savedSessions]);
-        
+        console.log("no data saved", error);
+        alert("Error saving data", error);
+      } 
+    })();
+  }, [saved]);
 
   
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
     // Add warning alert with continue button if Alertreps is more than weight
-    if (testError(reps, weight, setReps, setWeight)) return
+    if (parseFloat(reps) > parseFloat(weight)) {
+      alert(
+        'Warning\nThe number of reps is greater than the weight.')
+      return;
+    }
 
-    const full = combineSets(reps, weight);
+    if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
+      alert("Warning\nPlease enter a value for reps and weight.")
+      return;
+    }
+
+    const full = combineSets(setNum, reps, weight);
 
     setSaved((prev) => {
       if (!prev) {
@@ -141,120 +71,87 @@ export function Exercise({name, navigation}) {
         return [...prev, full];
       }
     });
-
+    
+    setSetNums(0);
     setReps(0);
     setWeight(0);
   };
 
-  function toggleSession() {
-    setSessionActive(!sessionActive);
-    return sessionActive;
+  function removeSet(id) {
+    const filtered = saved.filter((item, index) => index !== id);
+    console.log(filtered)
+    setSaved(filtered);
+    saveSets(key, filtered);
   }
-
-  function toggleShowReps() {
-    setShowReps(!showReps);
-    return showReps;
-  }
-
-  function displayAllSessions() {
-
-  }
-
   
-  return (
-    <SafeAreaView style={styles.container}>
-        {sessionActive ? recordSession(name, reps, weight, setReps, setWeight, handleFullSetSubmit ,toggleSession) : ""}
-
-
-        <CustomButton title={
-          sessionActive ? "Finish Session" : "Start Session"
-        } onPress={() => {
-          console.log("sessionActive", sessionActive)
-          toggleSession();
-        }} />
-        
-        <CustomButton 
-        title={showReps ? "Hide All Previous Sets and Reps" : "View all Previous Sets and Reps"}
-         onPress={toggleShowReps} />
-
-        { RenderSession(savedSessions , saved) }       
-
-        {showReps ? renderAllRecordedSets(saved) : ""}
-
-        <TouchableOpacity style={styles.cog}>
-          <Icon 
-            size={50}
-            name="cog" 
-            backgroundColor="#3b5998"
-            onPress={()=> {goToSettings(name, listedKey , groupedKey, navigation)}} />
-
-          {/* <CustomButton title={clearButtonTitle}  /> */}
-        </TouchableOpacity>
-        
-    </SafeAreaView>
-  );
-}
-
-function renderAllRecordedSets(saved) {
-  if (saved == null) {
-    return <Text>No sets recorded</Text>
-  }
-  const listedSets = saved.map((item, index) => {
-    return (
-      <View key={index} style={{
-        borderWidth: 1,
-        borderColor: "black",
-        alignContent: "center",
-        }}>
-          <View style={{
-            flex: 1,
-            flexDirection: "row",
-          }}>
-            <View>
-                <Text>Reps: {item.reps},</Text>
-                <Text>Weight: {item.weight}</Text>
-            </View>
-            <View>
-                <Text>Est 1-rep for this set: {EpleyConversion(item.reps, item.weight)}</Text>
-            </View>
-          </View>
-      </View>
-        )
-      });
+  // function to display the full set
+  const displayFullSet = (toggled) => {
+    // check if there is a saved full set
+    if (!saved || saved.length === 0) {
       return (
-        <View style={{
-          flex: 1,
-          flexDirection: "row",
-        }}>
-          <Text style={{
-            borderWidth: 1,
-            borderColor: "black",
-            alignContent: "center",
-            }}
-            >Previous Reps and Sets</Text>
-          <ScrollView style={{
-            borderWidth: 1,
-            borderColor: "black",
-            alignContent: "center",
-            }}>
-              {listedSets}
-          </ScrollView>
-        </View>
-          ) 
+      <View style={
+        {
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }
+      }>
+        <Text>No saved sets</Text>
+      </View>
+      )
+    }
+  
+    return (
+      <View>
+        {saved.map((item, index) => {
+          return (
+            <View key={index}>
+              <Text>Sets: {item.sets} | reps: {item.reps} | weight: {item.weight} | Est. 1RM: {EpleyConversion(item.sets, item.reps, item.weight, toggled)}</Text>
+              <Button title="Remove Set" onPress={() => {
+                removeSet(index);
+              }} />
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // TODO 
+  function onChangedSetNum({target}) {
+
+  }
+  function onChangedReps({target}) {
+
+  }
+  function onChangedSetWeight({target}) {
+
   }
 
 
 
-function recordSession(name, reps, weight, setReps, setWeight, submitHandler, toggleSession) {
-  // start new session
   return (
-    <View style = {{
-      alignItems: "center",
-      justifyContent: "center",
-    }}>
-      <Text>Record your {name}</Text>
+    <View style={{ 
+      flex: 1, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      marginTop: 20,
+      margin: 10,
+    }}
+     >
+      <Text>{name} Screen</Text>
+      <Text>Input Sets Here</Text>
+
+      {/* The text inputs and save buttons */}
       <TextInput 
-      placeholder={`reps as a number`}
+      placeholder={`sets as a number ${setNum}`}
+      keyboardType='numeric'
+      value={setNum} onChangeText={setSetNums}
+      maxLength={4}
+       />
+
+      <TextInput 
+      placeholder={`reps as a number ${reps}`}
       keyboardType='numeric'
       value={reps}
       onChangeText={setReps}
@@ -262,122 +159,63 @@ function recordSession(name, reps, weight, setReps, setWeight, submitHandler, to
        />
 
       <TextInput 
-      placeholder={`weight as a number`} 
+      placeholder={`weight as a number ${weight}`} 
       keyboardType='numeric'
       value={weight} 
       onChangeText={setWeight}
       maxLength={4}
       />
       
-      <CustomButton style={{width: "60%"}} title="Submit Weights" onPress={() => {
-        submitHandler();
+      <Button style={{
+        padding: 20,
+      }} title="Submit Weights" onPress={() => {
+        handleFullSetSubmit();
       }} />
-    </View>
-  )
-}
 
-
-function RenderSession(savedSessions, saved) {
-  if (savedSessions == null || savedSessions.length == 0 ) {return <Text>No sessions saved</Text>};
-  const lastSession = savedSessions[savedSessions.length - 1].map((item, index) => {
-    return (
-      <View key={index} style={{
-        borderWidth: 1,
-        borderColor: "black",
-        marginRight: 10,
-        marginLeft: 10,
-        marginBottom: 5,
-      }}>
-        <Text> Reps: {item.reps} Weight: {item.weight} </Text>
-      </View>
-    )
-  });
-  console.log("listed exercises" , saved)
-  return (
-    <View style={{
-    }} >
-      <View style={{
-        flexDirection: "row",
-        alignItems: "center",
-      }}>
-        <Text style={{
-          fontWeight: "bold",
-        }}> Last Session </Text>
-        <View style={{
-          flexDirection: "row",
-          flexWrap: "wrap", // set flexWrap to "wrap"
-        }}>
-          {lastSession}
-        </View>
-      </View>
-        <Text style={{}} >Max 1-Rem for this session: {"TODO"} | Recorded on {"TODO"}</Text>
+      {/* Displaying all of the information */}
+      {/* Display 1RM */}
+      <Button style={
+        {
+          padding: 20,
+        }
+      } title="Toggle Rounded 1RM" onPress={() => {
+        setToggleRounded(!toggleRounded);
+      }} />
+      <ScrollView>
+        {displayFullSet(toggleRounded)}
+      </ScrollView>
+      <Button style={{
+        padding: 20,
+        maxWidth: 100,
+        fontSize: "10em",
+      }} title={buttonTitle} onPress={() =>
+      {  
+        clearExerciseData(key, setSaved);
+      }  
+      } />
     </View>
-  )
-}
-function goToSettings(name, listedKey, groupedKey, navigation) {
-  // navigate to settings screen and pass arguments
-  navigation.navigate('Exercise Settings', {
-    name: name,
-    listedKey: listedKey,
-    groupedKey: groupedKey,
-  });
+  );
 }
 
 async function getSavedSets(key) {
   const items = await AsyncStorage.getItem(key);
-  console.log("unparsed ", items)
-  // console.log("retriving sets: ", items)
-  return items;
-}
-
-async function getSavedSessions(key) {
-  const items = await AsyncStorage.getItem(key);
+  console.log("retriving sets: ", items)
   return items;
 }
 
 async function saveSets(key, items) {
-  // console.log("saving sets ", items)
-  return await AsyncStorage.setItem(key, JSON.stringify(items), () => {console.log(items, " saved")});
-}
-
-async function saveSessions(key, items) {
-  // console.log("saving sets ", items)
+  console.log("save sets ", items)
   return await AsyncStorage.setItem(key, JSON.stringify(items));
 }
 
-function combineSets( reps, weight) {
+function combineSets(setNum, reps, weight) {
   const combined = {
+    id: generateExerciseId(),
+    sets: setNum,
     reps: reps,
     weight: weight
   };
   return combined;
-}
-
-function testError(reps, weight, setReps, setWeight) {
-  const reset = () => {
-    setReps(0);
-    setWeight(0);
-  }
-  let test = false
-  if (parseFloat(reps) > parseFloat(weight)) {
-    alert(
-      'Warning\nThe number of reps is greater than the weight.')
-      test = true;
-  }
-
-  if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
-  {
-    Alert.alert(
-      'Warning \n Please enter a value for reps and weight.'
-    )
-    test = true;
-  }
-  if (test) {
-    reset();
-  }
-  return test;
-}
-
 }
 
 export default Exercise;
