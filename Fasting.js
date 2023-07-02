@@ -5,6 +5,18 @@ import moment from 'moment/moment';
 
 const TIME_KEY = '@start_time'
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    },
+  button: {
+    padding: "20px",
+    margin: 100,
+    }
+  }
+);
 
 async function SaveTime() {
   let time = new Date(Date.now())
