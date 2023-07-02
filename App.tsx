@@ -3,11 +3,10 @@ import { NavigationContainer,useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GeneralExercises } from './GeneralExercises';
 import { total_exercises_dict } from './exercise_store';
-import { Exercise } from './Exercise';
+import { Exercise } from './Exercise/Exercise';
 import  Home  from './Home';
 import Fasting from './Fasting';
-import { StyleSheet } from 'react-native';
-
+import WorkoutSession from './Exercise/WorkoutSession';
 
 const Stack = createStackNavigator();
 
@@ -19,6 +18,7 @@ export default function App() {
           <Stack.Screen name="Exercise List" component={Home} options={{"title": "Home"}}/>
           { generate_exercise_screens()}
           <Stack.Screen name="General Exercises" component={GeneralExercises} />
+          <Stack.Screen name="WorkoutSessions" component={WorkoutSession} />
           {/* <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} /> */}
           {/* <Stack.Screen name="Diet" component={Diet} /> */}
           <Stack.Screen name="Fasting" component={Fasting} /> 
