@@ -36,3 +36,13 @@ export function EpleyConversion(set: string, rep : string, weight : string, togg
     return value;
   }
 }
+
+export async function DefaultClearDataOnFirstLoad () {
+  // check if flag for data is set
+  const check = await AsyncStorage.getItem('dataFlagA');
+  // if not, clear all data
+  if (check === null) {
+    clearAllAsyncStorage();
+    await AsyncStorage.setItem('dataFlagA', 'true');
+  }
+}
