@@ -28,7 +28,8 @@ export function Exercise({name, navigation}) {
   const [reps, setReps] = useState(0);
   const [weight, setWeight] = useState(0);
   const [sessionActive, setSessionActive] = useState(false);
-  
+  const [showReps , setShowReps] = useState(false);
+
   // State variable to store the reps input by the user
   const [saved, setSaved] = useState(null);
   const [savedSessions, setSavedSessions] = useState(null);
@@ -74,25 +75,18 @@ export function Exercise({name, navigation}) {
    })();
  }, []);
 
-
-  // TODO combine the following two functions into one
-  
-  
   useEffect(() => {
     (async () => {
       try {
         if (sessionActive) {
-          // console.log("Session started")
           startSessionNum = saved ? saved.length : 0;
-          // console.log("start from index: ", startSessionNum)
         } else {
-          // console.log(startSessionNum)
-
-          // create a shallow copy and 
-
           const currentSession = saved.slice(startSessionNum, saved.length); // should throw an error on first pass
-          // console.log("current session useEffect ", currentSession)
-          // console.log("Session ended")
+          
+          if (currentSession.length == 0) {
+            console.log("nothing to add")
+            return;
+          }
           setSavedSessions((prev) => {
             if (!prev) {
               // console.log("no prev")
@@ -136,16 +130,7 @@ export function Exercise({name, navigation}) {
   // Handler function to save the full set to storage when the submit button is pressed
   const handleFullSetSubmit = () => {
     // Add warning alert with continue button if Alertreps is more than weight
-    if (parseFloat(reps) > parseFloat(weight)) {
-      alert(
-        'Warning\nThe number of reps is greater than the weight.')
-      return;
-    }
-
-    if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
-      alert("Warning\nPlease enter a value for reps and weight.")
-      return;
-    }
+    if (testError(reps, weight, setReps, setWeight)) return
 
     const full = combineSets(reps, weight);
 
@@ -166,6 +151,11 @@ export function Exercise({name, navigation}) {
     return sessionActive;
   }
 
+  function toggleShowReps() {
+    setShowReps(!showReps);
+    return showReps;
+  }
+
   function displayAllSessions() {
 
   }
@@ -183,17 +173,20 @@ export function Exercise({name, navigation}) {
           toggleSession();
         }} />
         
-        <CustomButton title="View Sessions" onPress={displayAllSessions} />
+        <CustomButton 
+        title={showReps ? "Hide All Previous Sets and Reps" : "View all Previous Sets and Reps"}
+         onPress={toggleShowReps} />
 
         { RenderSession(savedSessions , saved) }       
 
-        {renderAllRecordedSets(saved)}
+        {showReps ? renderAllRecordedSets(saved) : ""}
+
         <TouchableOpacity style={styles.cog}>
           <Icon 
             size={50}
             name="cog" 
             backgroundColor="#3b5998"
-            onPress={goToSettings} />
+            onPress={()=> {goToSettings(name, listedKey , groupedKey, navigation)}} />
 
           {/* <CustomButton title={clearButtonTitle}  /> */}
         </TouchableOpacity>
@@ -208,21 +201,48 @@ function renderAllRecordedSets(saved) {
   }
   const listedSets = saved.map((item, index) => {
     return (
-      <View key={index}>
-      <Text>Reps: {item.reps}</Text>
-        <Text>Weight: {item.weight}</Text>
+      <View key={index} style={{
+        borderWidth: 1,
+        borderColor: "black",
+        alignContent: "center",
+        }}>
+          <View style={{
+            flex: 1,
+            flexDirection: "row",
+          }}>
+            <View>
+                <Text>Reps: {item.reps},</Text>
+                <Text>Weight: {item.weight}</Text>
+            </View>
+            <View>
+                <Text>Est 1-rep for this set: {EpleyConversion(item.reps, item.weight)}</Text>
+            </View>
+          </View>
       </View>
         )
       });
-      return <ScrollView style={{
-        borderWidth: 1,
-        borderColor: "black",
-        width: "100%",
-        alignContent: "center",
+      return (
+        <View style={{
+          flex: 1,
+          flexDirection: "row",
         }}>
-          {listedSets}
-      </ScrollView>
-}
+          <Text style={{
+            borderWidth: 1,
+            borderColor: "black",
+            alignContent: "center",
+            }}
+            >Previous Reps and Sets</Text>
+          <ScrollView style={{
+            borderWidth: 1,
+            borderColor: "black",
+            alignContent: "center",
+            }}>
+              {listedSets}
+          </ScrollView>
+        </View>
+          ) 
+  }
+
 
 
 function recordSession(name, reps, weight, setReps, setWeight, submitHandler, toggleSession) {
@@ -261,30 +281,46 @@ function RenderSession(savedSessions, saved) {
   if (savedSessions == null || savedSessions.length == 0 ) {return <Text>No sessions saved</Text>};
   const lastSession = savedSessions[savedSessions.length - 1].map((item, index) => {
     return (
-      <View key={index}>
-        <Text>Reps: {item.reps}</Text>
-        <Text>Weight: {item.weight}</Text>
-        </View>
-        )
-      });
-      console.log("listed exercises" , saved)
-  // if (typeof lastSession == 'undefined') {return <Text>No sessions saved [undefined]</Text>};
-  // console.log("saved sessions in render ",savedSessions)
-  // console.log("the last session in that list ",lastSession)
+      <View key={index} style={{
+        borderWidth: 1,
+        borderColor: "black",
+        marginRight: 10,
+        marginLeft: 10,
+        marginBottom: 5,
+      }}>
+        <Text> Reps: {item.reps} Weight: {item.weight} </Text>
+      </View>
+    )
+  });
+  console.log("listed exercises" , saved)
   return (
-    <View>
-      <Text style={{
-        fontWeight: "bold",
-      }}> Last Session
-      {lastSession}
-      </Text>
+    <View style={{
+    }} >
+      <View style={{
+        flexDirection: "row",
+        alignItems: "center",
+      }}>
+        <Text style={{
+          fontWeight: "bold",
+        }}> Last Session </Text>
+        <View style={{
+          flexDirection: "row",
+          flexWrap: "wrap", // set flexWrap to "wrap"
+        }}>
+          {lastSession}
+        </View>
+      </View>
+        <Text style={{}} >Max 1-Rem for this session: {"TODO"} | Recorded on {"TODO"}</Text>
     </View>
   )
 }
-
-
-function goToSettings() {
-  // navigate to settings screen
+function goToSettings(name, listedKey, groupedKey, navigation) {
+  // navigate to settings screen and pass arguments
+  navigation.navigate('Exercise Settings', {
+    name: name,
+    listedKey: listedKey,
+    groupedKey: groupedKey,
+  });
 }
 
 async function getSavedSets(key) {
@@ -315,6 +351,33 @@ function combineSets( reps, weight) {
     weight: weight
   };
   return combined;
+}
+
+function testError(reps, weight, setReps, setWeight) {
+  const reset = () => {
+    setReps(0);
+    setWeight(0);
+  }
+  let test = false
+  if (parseFloat(reps) > parseFloat(weight)) {
+    alert(
+      'Warning\nThe number of reps is greater than the weight.')
+      test = true;
+  }
+
+  if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
+  {
+    Alert.alert(
+      'Warning \n Please enter a value for reps and weight.'
+    )
+    test = true;
+  }
+  if (test) {
+    reset();
+  }
+  return test;
+}
+
 }
 
 export default Exercise;
