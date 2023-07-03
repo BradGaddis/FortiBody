@@ -20,8 +20,8 @@ const styles = StyleSheet.create({
 });
 
 let startSessionNum = 0;
-let endSessionNum = 0;
 
+//TODO separate the rendering functions into their own components in a separate file
 
 // This is designed to be a generic exercise screen
 export function Exercise({name, navigation}) {
