@@ -3,19 +3,16 @@ import { TouchableOpacity, Text } from "react-native";
 
 
 function CustomButton({style = null, title, onPress = null, textColor = "#fff"}) {
-    if (!style) {
-        style = {
-            backgroundColor: "blue",
-            padding: 10,
-            margin: 10,
-            borderRadius: 15,
-            alignItems: "center",
-        }
+    const defaultStyle = {
+        backgroundColor: "#668cff",
+        padding: 10,
+        margin: 10,
+        borderRadius: 15,
+        alignItems: "center",
     }
             
-
     return (
-        <TouchableOpacity style={style} onPress={onPress}>
+        <TouchableOpacity style={[defaultStyle, style]} onPress={onPress}>
             <Text style={{color: textColor}}>{title}</Text>
         </TouchableOpacity>
     )
