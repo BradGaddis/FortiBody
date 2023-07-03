@@ -17,16 +17,17 @@ export function generateExerciseId() {
 }
 
 // Clear all data for an exercise and reset the state variables
-export async function clearExerciseData(key: string, state: any) {
+export async function clearExerciseData(key: string, state: any = null) {
   try {
     await AsyncStorage.removeItem(key);
-    state(null);
+    if (state !== null) state(null);
+    console.log('Exercise data cleared successfully');
   } catch (e) {
     console.error('Error clearing exercise data', e);
   }
 }
 
-export function EpleyConversion(set: string, rep : string, weight : string, toggleRounded : boolean = true) {
+export function EpleyConversion(rep : string, weight : string, toggleRounded : boolean = true) {
   let value = parseFloat(weight) * (1 + (parseFloat(rep) / 30));
   if (toggleRounded) {
     return Math.round(value/5)*5;
