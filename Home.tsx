@@ -4,6 +4,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import CustomButton from './Components/CustomButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const styles = StyleSheet.create({
   container: {
@@ -17,7 +18,7 @@ const styles = StyleSheet.create({
 function Home({ navigation } : { navigation: any })  {
  
   return (
-    <View>
+    <SafeAreaView style={{height: "100%"}}>
       <Text>Choose an exercise group:</Text>  
       <ScrollView>
         {/* Button for natigating to general purpose exercises */}
@@ -26,12 +27,11 @@ function Home({ navigation } : { navigation: any })  {
     
         {/* <PowerLiftingExercises /> */}
         {/* <Button title="Powerlifting Exercises" onPress={() => navigation.navigate('Powerlifting Exercises')} /> */}
-        <CustomButton title="Fasting" onPress={() => navigation.navigate('Fasting')} />
+        <CustomButton title="Fasting Timer" onPress={() => navigation.navigate('Fasting')} />
 
-        <CustomButton title={"Test button"}/> 
       </ScrollView>
       <Button title="Clear All Storage" onPress={() => clearAllAsyncStorage()} />
-    </View>
+    </SafeAreaView>
   );  
 }
 
