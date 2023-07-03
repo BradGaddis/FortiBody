@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
 function Home({ navigation } : { navigation: any })  {
  
   return (
-    <SafeAreaView style={{height: "100%"}}>
+    <View>
       <Text>Choose an exercise group:</Text>  
       <ScrollView>
         {/* Button for natigating to general purpose exercises */}
@@ -31,7 +31,7 @@ function Home({ navigation } : { navigation: any })  {
 
       </ScrollView>
       <Button title="Clear All Storage" onPress={() => clearAllAsyncStorage()} />
-    </SafeAreaView>
+    </View>
   );  
 }
 
