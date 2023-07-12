@@ -195,6 +195,9 @@ export function Exercise({name, navigation}) {
   );
 }
 
+function clearSets(key) {
+}
+
 function renderAllRecordedSets(saved) {
   if (saved == null) {
     return <Text>No sets recorded</Text>
@@ -205,24 +208,37 @@ function renderAllRecordedSets(saved) {
         borderWidth: 1,
         borderColor: "black",
         alignContent: "center",
+        flexShrink: 1,
         }}>
           <View style={{
             flex: 1,
             flexDirection: "row",
+            flexWrap: "nowrap",
           }}>
-            <View>
-                <Text>Reps: {item.reps},</Text>
-                <Text>Weight: {item.weight}</Text>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: "black",
+                alignContent: "center",
+              }}
+	    >
+                <Text numberOfLines={1} >Reps: {item.reps},</Text>
+                <Text numberOfLines={1} >Weight: {item.weight}</Text>
             </View>
-            <View>
-                <Text>Est 1-rep for this set: {EpleyConversion(item.reps, item.weight)}</Text>
+            <View style={{
+              flex: 1,
+            }}>
+            <Text style={{flexWrap: 'wrap'}}>
+                Est 1-rep for this set: {EpleyConversion(item.reps, item.weight)}
+                </Text>
             </View>
           </View>
       </View>
         )
       });
+
       return (
-        <View style={{
+        <SafeAreaView style={{
           flex: 1,
           flexDirection: "row",
         }}>
@@ -230,6 +246,8 @@ function renderAllRecordedSets(saved) {
             borderWidth: 1,
             borderColor: "black",
             alignContent: "center",
+	    height: "100%",
+	    maxHeight: "100%",
             }}
             >Previous Reps and Sets</Text>
           <ScrollView style={{
@@ -239,7 +257,7 @@ function renderAllRecordedSets(saved) {
             }}>
               {listedSets}
           </ScrollView>
-        </View>
+        </SafeAreaView>
           ) 
   }
 
@@ -310,7 +328,7 @@ function RenderSession(savedSessions, saved) {
           {lastSession}
         </View>
       </View>
-        <Text style={{}} >Max 1-Rem for this session: {"TODO"} | Recorded on {"TODO"}</Text>
+        <Text style={{}} >Max 1-Rep for this session: {"TODO"} | Recorded on {"TODO"}</Text>
     </View>
   )
 }
