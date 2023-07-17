@@ -1,27 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Text, Button, View, Alert, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScrollView } from 'react-native-gesture-handler';
-import { EpleyConversion, clearExerciseData, generateExerciseId } from '../utils';
-import CustomButton from '../Components/CustomButton';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  cog: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    zIndex: 1,
-  },
-});
+import RenderExercise from './Rendering/RenderExericise';
+import renderAllRecordedSets from './Rendering/RenderAllRecordedSets';
+import RenderSession from './Rendering/RenderSession';
+import { recordSession } from './Helpers/Recording';
+import goToSettings  from './Helpers/GoToSettings';
+import { testError, 
+  getSavedSets,
+  getSavedSessions,
+  saveSets,
+  saveSessions,
+  combineSets } from "./Helpers/Helpers";
 
 let startSessionNum = 0;
-
-//TODO separate the rendering functions into their own components in a separate file
 
 // This is designed to be a generic exercise screen
 export function Exercise({name, navigation}) {
@@ -156,246 +146,29 @@ export function Exercise({name, navigation}) {
     return showReps;
   }
 
-  function displayAllSessions() {
-
-  }
-
   
   return (
-    <SafeAreaView style={styles.container}>
-        {sessionActive ? recordSession(name, reps, weight, setReps, setWeight, handleFullSetSubmit ,toggleSession) : ""}
-
-
-        <CustomButton title={
-          sessionActive ? "Finish Session" : "Start Session"
-        } onPress={() => {
-          console.log("sessionActive", sessionActive)
-          toggleSession();
-        }} />
-        
-        <CustomButton 
-        title={showReps ? "Hide All Previous Sets and Reps" : "View all Previous Sets and Reps"}
-         onPress={toggleShowReps} />
-
-        { RenderSession(savedSessions , saved) }       
-
-        {showReps ? renderAllRecordedSets(saved) : ""}
-
-        <TouchableOpacity style={styles.cog}>
-          <Icon 
-            size={50}
-            name="cog" 
-            backgroundColor="#3b5998"
-            onPress={()=> {goToSettings(name, listedKey , groupedKey, navigation)}} />
-
-          {/* <CustomButton title={clearButtonTitle}  /> */}
-        </TouchableOpacity>
-        
-    </SafeAreaView>
+    RenderExercise(
+      name,
+      reps,
+      weight, 
+      setReps, 
+      setWeight, 
+      handleFullSetSubmit, 
+      toggleSession, 
+      sessionActive, 
+      savedSessions, 
+      saved, 
+      toggleShowReps,
+      showReps,
+      navigation,
+      goToSettings, 
+      listedKey,
+      groupedKey, 
+      recordSession, 
+      RenderSession, 
+      renderAllRecordedSets,
+      )
   );
 }
 
-function clearSets(key) {
-}
-
-function renderAllRecordedSets(saved) {
-  if (saved == null) {
-    return <Text>No sets recorded</Text>
-  }
-  const listedSets = saved.map((item, index) => {
-    return (
-      <View key={index} style={{
-        borderWidth: 1,
-        borderColor: "black",
-        alignContent: "center",
-        flexShrink: 1,
-        }}>
-          <View style={{
-            flex: 1,
-            flexDirection: "row",
-            flexWrap: "nowrap",
-          }}>
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "black",
-                alignContent: "center",
-              }}
-	    >
-                <Text numberOfLines={1} >Reps: {item.reps},</Text>
-                <Text numberOfLines={1} >Weight: {item.weight}</Text>
-            </View>
-            <View style={{
-              flex: 1,
-            }}>
-            <Text style={{flexWrap: 'wrap'}}>
-                Est 1-rep for this set: {EpleyConversion(item.reps, item.weight)}
-                </Text>
-            </View>
-          </View>
-      </View>
-        )
-      });
-
-      return (
-        <SafeAreaView style={{
-          flex: 1,
-          flexDirection: "row",
-        }}>
-          <Text style={{
-            borderWidth: 1,
-            borderColor: "black",
-            alignContent: "center",
-	    height: "100%",
-	    maxHeight: "100%",
-            }}
-            >Previous Reps and Sets</Text>
-          <ScrollView style={{
-            borderWidth: 1,
-            borderColor: "black",
-            alignContent: "center",
-            }}>
-              {listedSets}
-          </ScrollView>
-        </SafeAreaView>
-          ) 
-  }
-
-
-
-function recordSession(name, reps, weight, setReps, setWeight, submitHandler, toggleSession) {
-  // start new session
-  return (
-    <View style = {{
-      alignItems: "center",
-      justifyContent: "center",
-    }}>
-      <Text>Record your {name}</Text>
-      <TextInput 
-      placeholder={`reps as a number`}
-      keyboardType='numeric'
-      value={reps}
-      onChangeText={setReps}
-      maxLength={4}
-       />
-
-      <TextInput 
-      placeholder={`weight as a number`} 
-      keyboardType='numeric'
-      value={weight} 
-      onChangeText={setWeight}
-      maxLength={4}
-      />
-      
-      <CustomButton style={{width: "60%"}} title="Submit Weights" onPress={() => {
-        submitHandler();
-      }} />
-    </View>
-  )
-}
-
-
-function RenderSession(savedSessions, saved) {
-  if (savedSessions == null || savedSessions.length == 0 ) {return <Text>No sessions saved</Text>};
-  const lastSession = savedSessions[savedSessions.length - 1].map((item, index) => {
-    return (
-      <View key={index} style={{
-        borderWidth: 1,
-        borderColor: "black",
-        marginRight: 10,
-        marginLeft: 10,
-        marginBottom: 5,
-      }}>
-        <Text> Reps: {item.reps} Weight: {item.weight} </Text>
-      </View>
-    )
-  });
-  console.log("listed exercises" , saved)
-  return (
-    <View style={{
-    }} >
-      <View style={{
-        flexDirection: "row",
-        alignItems: "center",
-      }}>
-        <Text style={{
-          fontWeight: "bold",
-        }}> Last Session </Text>
-        <View style={{
-          flexDirection: "row",
-          flexWrap: "wrap", // set flexWrap to "wrap"
-        }}>
-          {lastSession}
-        </View>
-      </View>
-        <Text style={{}} >Max 1-Rep for this session: {"TODO"} | Recorded on {"TODO"}</Text>
-    </View>
-  )
-}
-function goToSettings(name, listedKey, groupedKey, navigation) {
-  // navigate to settings screen and pass arguments
-  navigation.navigate('Exercise Settings', {
-    name: name,
-    listedKey: listedKey,
-    groupedKey: groupedKey,
-  });
-}
-
-async function getSavedSets(key) {
-  const items = await AsyncStorage.getItem(key);
-  console.log("unparsed ", items)
-  // console.log("retriving sets: ", items)
-  return items;
-}
-
-async function getSavedSessions(key) {
-  const items = await AsyncStorage.getItem(key);
-  return items;
-}
-
-async function saveSets(key, items) {
-  // console.log("saving sets ", items)
-  return await AsyncStorage.setItem(key, JSON.stringify(items), () => {console.log(items, " saved")});
-}
-
-async function saveSessions(key, items) {
-  // console.log("saving sets ", items)
-  return await AsyncStorage.setItem(key, JSON.stringify(items));
-}
-
-function combineSets( reps, weight) {
-  const combined = {
-    reps: reps,
-    weight: weight
-  };
-  return combined;
-}
-
-function testError(reps, weight, setReps, setWeight) {
-  const reset = () => {
-    setReps(0);
-    setWeight(0);
-  }
-  let test = false
-  if (parseFloat(reps) > parseFloat(weight)) {
-    alert(
-      'Warning\nThe number of reps is greater than the weight.')
-      test = true;
-  }
-
-  if (reps == '0' || weight == '0' || isNaN(reps) || isNaN(weight)) {
-  {
-    Alert.alert(
-      'Warning \n Please enter a value for reps and weight.'
-    )
-    test = true;
-  }
-  if (test) {
-    reset();
-  }
-  return test;
-}
-
-}
-
-export default Exercise;
