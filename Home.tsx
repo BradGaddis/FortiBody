@@ -1,5 +1,5 @@
 import { Text, View, Button } from 'react-native';
-import { clearAllAsyncStorage } from './utils';
+import { clearAllAsyncStorage } from './Utils';
 import { ScrollView } from 'react-native-gesture-handler';
 import React from 'react';
 import { StyleSheet } from 'react-native';
