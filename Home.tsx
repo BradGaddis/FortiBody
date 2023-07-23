@@ -8,14 +8,6 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import Favicon from 'react-native-vector-icons/FontAwesome5';
 import styles from './Styles';
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-})
 
 function Home({ navigation } : { navigation: any })  {
   return (

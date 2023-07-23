@@ -1,9 +1,9 @@
 import { generateExerciseId } from "../../Utils";
 
-const placeholder_img = require('../../Assets/basketball-placeholder.png');
-const ct_bench_press = require('../../Assets/benchpress.jpg');
-const brian_squat = require('../../Assets/squat.jpg');
-const eddie_deadlift = require('../../Assets/deadlift.jpg');
+const placeholder_img = require('../../assets/basketball-placeholder.png');
+const ct_bench_press = require('../../assets/benchpress.jpg');
+const brian_squat = require('../../assets/squat.jpg');
+const eddie_deadlift = require('../../assets/deadlift.jpg');
 
 let pushup = ''
 let bodyweight_squat = ''
