@@ -39,7 +39,12 @@ const styles = StyleSheet.create({
   generalExerciseImage: {
     width: itemWidth,
     height: itemHeight,
-  }
+  },
+  homeContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default styles;

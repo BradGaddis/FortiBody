@@ -25,7 +25,6 @@ async function SaveTime() {
   console.log("starting timer at: ", time)
 }
 
-
 async function ClearTime(){
   await AsyncStorage.removeItem(TIME_KEY);
 }

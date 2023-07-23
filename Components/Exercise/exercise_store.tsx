@@ -1,0 +1,51 @@
+import { generateExerciseId } from "../../Utils";
+
+const placeholder_img = require('../../Assets/basketball-placeholder.png');
+const ct_bench_press = require('../../Assets/benchpress.jpg');
+const brian_squat = require('../../Assets/squat.jpg');
+const eddie_deadlift = require('../../Assets/deadlift.jpg');
+
+let pushup = ''
+let bodyweight_squat = ''
+let inclined_Press = ''
+
+const exercise_names = [
+  "Bench Press",
+  "Incline Bench Press",
+  "Weighted Back Squat",
+  "Deadlift",
+  "Push Ups",
+  "Body Weight Squat",
+  "Dumbell Bicep Curl",
+  "Sit Ups",
+  "Pull Ups",
+  "Dips",
+  "Barbell Row",
+  "Barbell Seated Overhead Press",
+  "Barbell Standing Overhead Press",
+  "Barbell Shrug",
+  "Barbell Curl",
+]
+
+
+export const total_exercises_dict = [
+  { name: exercise_names[0], img: ct_bench_press ? ct_bench_press : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[1], img: inclined_Press ? inclined_Press : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[2], img: brian_squat ? brian_squat : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[3], img: eddie_deadlift ? eddie_deadlift : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[4], img: pushup ? pushup : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[5], img: bodyweight_squat ? bodyweight_squat : placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[6], img: placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[7], img: placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[8], img: placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[9], img: placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[10], img: placeholder_img, id: generateExerciseId()},
+  { name: exercise_names[11], img: placeholder_img, id: generateExerciseId()}, 
+];
+
+
+export const powerlifting_exercises = [
+  exercise_names[0],
+  exercise_names[1],
+  exercise_names[2],
+]
