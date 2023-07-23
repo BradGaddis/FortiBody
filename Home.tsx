@@ -6,21 +6,17 @@ import { StyleSheet } from 'react-native';
 import CustomButton from './Components/CustomButton';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Favicon from 'react-native-vector-icons/FontAwesome5';
+import styles from './Styles';
 
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-})
 
 function Home({ navigation } : { navigation: any })  {
   return (
-    <View>
+    <View style={styles.homeContainer}>
       <Text>Choose an exercise group:</Text>  
+      <Favicon 
+          size={25}
+          backgroundColor="#3b5998"
+      />
       <ScrollView>
         {/* Button for natigating to general purpose exercises */}
         <CustomButton title="General Exercises" onPress={() => navigation.navigate("General Exercises")} />
