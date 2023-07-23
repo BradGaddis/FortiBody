@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
-import CustomButton from '../../Components/CustomButton';
+import CustomButton from '../../CustomButton';
 
 export function recordSession(name, reps, weight, setReps, setWeight, submitHandler, toggleSession) {
     // start new session

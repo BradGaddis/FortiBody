@@ -2,12 +2,12 @@ import React from 'react';
 import { SafeAreaView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { GeneralExercises } from './Exercise/GeneralExercises';
-import { total_exercises_dict } from './Exercise/exercise_store';
-import { Exercise } from './Exercise/Exercise';
+import { GeneralExercises } from './Components/Exercise/GeneralExercises';
+import { total_exercises_dict } from './Components/Exercise/exercise_store';
+import { Exercise } from './Components/Exercise/Exercise';
 import  Home  from './Home';
 import Fasting from './Fasting';
-import { ExerciseSettings } from './Exercise/Settings';
+import { ExerciseSettings } from './Components/Exercise/Settings';
 
 const Stack = createStackNavigator();
 // options={{"headerShown": false}

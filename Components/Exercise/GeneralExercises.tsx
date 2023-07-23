@@ -1,7 +1,7 @@
 import {  Text, View, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { powerlifting_exercises, total_exercises_dict } from './exercise_store';
 import React from 'react';
-import styles from '../Styles';
+import styles from '../../Styles';
 
 export function GeneralExercises({ navigation } : { navigation: any }) {
     return (

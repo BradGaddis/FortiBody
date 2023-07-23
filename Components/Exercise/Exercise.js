@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import RenderExercise from './Rendering/RenderExericise';
+import { RenderExerciseDefault } from './Rendering/RenderExercise';
 import renderAllRecordedSets from './Rendering/RenderAllRecordedSets';
 import RenderSession from './Rendering/RenderSession';
 import { recordSession } from './Helpers/Recording';
@@ -14,7 +14,7 @@ import { testError,
 let startSessionNum = 0;
 
 // This is designed to be a generic exercise screen
-export function Exercise({name, navigation}) {
+export function Exercise({name, navigation, type="default"}) {
   const [reps, setReps] = useState(0);
   const [weight, setWeight] = useState(0);
   const [sessionActive, setSessionActive] = useState(false);
@@ -146,29 +146,41 @@ export function Exercise({name, navigation}) {
     return showReps;
   }
 
+  if (type == "default")
+  {
+    return (
+      RenderExerciseDefault(
+        name,
+        reps,
+        weight, 
+        setReps, 
+        setWeight, 
+        handleFullSetSubmit, 
+        toggleSession, 
+        sessionActive, 
+        savedSessions, 
+        saved, 
+        toggleShowReps,
+        showReps,
+        navigation,
+        goToSettings, 
+        listedKey,
+        groupedKey, 
+        recordSession, 
+        RenderSession, 
+        renderAllRecordedSets,
+        )
+    );
+
+  }
   
-  return (
-    RenderExercise(
-      name,
-      reps,
-      weight, 
-      setReps, 
-      setWeight, 
-      handleFullSetSubmit, 
-      toggleSession, 
-      sessionActive, 
-      savedSessions, 
-      saved, 
-      toggleShowReps,
-      showReps,
-      navigation,
-      goToSettings, 
-      listedKey,
-      groupedKey, 
-      recordSession, 
-      RenderSession, 
-      renderAllRecordedSets,
-      )
-  );
+  // todo
+  if (type == "body weight")
+  return
+
+  // todo
+  if (type == "cardio")
+  return
+
 }
 

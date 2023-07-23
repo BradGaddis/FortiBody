@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, Button, View } from 'react-native';
-import { clearExerciseData } from '../Utils';
-import CustomButton from '../Components/CustomButton';
+import { clearExerciseData } from '../../Utils';
+import CustomButton from '../CustomButton';
 
 
 export function ExerciseSettings({route}) {

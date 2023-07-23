@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, SafeAreaView, ScrollView, StyleSheet } from 'react-native';
-import { EpleyConversion } from '../../Utils';
+import { EpleyConversion } from '../../../Utils';
 
 
 function renderAllRecordedSets(saved) {

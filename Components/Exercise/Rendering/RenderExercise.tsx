@@ -1,6 +1,6 @@
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
-import CustomButton from '../../Components/CustomButton';
+import CustomButton from '../../CustomButton';
 
 const styles = StyleSheet.create({
     container: {
@@ -8,14 +8,15 @@ const styles = StyleSheet.create({
     },
     cog: {
       position: 'absolute',
-      bottom: 10,
+      bottom: 15,
       right: 10,
-      zIndex: 1
+      zIndex: 1,
+      opacity: 0.5
     },
   });
 
 
-function RenderExercise(
+export function RenderExerciseDefault(
     name: string, 
     reps: number,
     weight: number, 
@@ -58,7 +59,7 @@ function RenderExercise(
 
                     <TouchableOpacity style={styles.cog}>
                     <Icon 
-                        size={50}
+                        size={25}
                         name="cog" 
                         backgroundColor="#3b5998"
                         onPress={()=> {goToSettings(name, listedKey , groupedKey, navigation)}} />
@@ -69,5 +70,3 @@ function RenderExercise(
                 </SafeAreaView>
         )
 }
-
-export default RenderExercise;
