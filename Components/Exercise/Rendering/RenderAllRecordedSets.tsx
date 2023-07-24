@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, SafeAreaView, ScrollView, StyleSheet } from 'react-native';
+import { Text, View, SafeAreaView, ScrollView } from 'react-native';
 import { EpleyConversion } from '../../../Utils';
 
 
@@ -51,8 +51,8 @@ function renderAllRecordedSets(saved) {
               borderWidth: 1,
               borderColor: "black",
               alignContent: "center",
-          height: "100%",
-          maxHeight: "100%",
+              height: "100%",
+              maxHeight: "100%",
               }}
               >Previous Reps and Sets</Text>
             <ScrollView style={{
