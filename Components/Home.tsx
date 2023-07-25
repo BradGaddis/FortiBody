@@ -6,7 +6,6 @@ import CustomButton from './CustomButton';
 import styles from '../Styles';
 import Header from './Header';
 import { RadialPulsatingButton } from './CustomButton';
-import { set } from 'react-native-reanimated';
 
 
 function CheckLoginStatus(loggedin: boolean = false) {
@@ -22,7 +21,7 @@ function Home({ navigation } : { navigation: any })  {
     return (
       <View style={styles.homeContainer}>
         <Header />
-        <RadialPulsatingButton title="Welcome" onPress={() => setLoggedin(true)}/>
+        <RadialPulsatingButton title="Big ass long text" onPress={() => setLoggedin(true)}/>
       </View>
     )
   }
