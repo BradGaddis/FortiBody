@@ -7,6 +7,7 @@ import { set } from 'react-native-reanimated';
 
 
 // TODO: Parse this component into different files
+// Parse breathing methods into different screens, much the same way as the exercises are parsed
 
 function Breathing({ navigation, route}: { navigation: any, route: any }) {
     const [method, setMethod] = useState("None")
@@ -20,7 +21,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
     const [holdBreathIn, setHoldBreathIn] = useState(false)
     const [holdTime, setHoldTime] = useState(30)
     const [advanced, setAdvanced] = useState(false)
-
+    
 
     useEffect(() => {
         let timer;
@@ -48,7 +49,6 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
         }
     }, [timer]);
       
-    
     useEffect(() => {
         let timeoutId;
       
@@ -61,11 +61,16 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
             countDown();
           timeoutId = setInterval(countDown, 1000);
           setHoldBreathOut(true);
-        } 
+        } else if (count < 31 && !holdBreathOut && advanced && round ==1) {
+            setOutBreathTimer(60)
+        } else if (count < 31 && !holdBreathOut && !advanced && round ==1) {
+            setOutBreathTimer(30)
+        }
+
 
         if (holdBreathIn) {
             setOutBreathTimer(holdTime);
-        }
+        } 
 
         return () => {
             clearInterval(timeoutId);
@@ -75,17 +80,28 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
       useEffect(() => {
           if (outBreathTimer === 0) {
             setCount(1);
-
-              if (round + 1 == 2){
-                  setHoldTime(60)
-                  console.log("hold time is now 90")
-                  
-              }
-              if (round + 1 == 3){
-                  setHoldTime(120)
-                  console.log("hold time is now 120")
-              }
-              setOutBreathTimer(holdTime); // Reset the timer
+            if(advanced) {
+                if (round + 1 == 2){
+                    setHoldTime(90)
+                    console.log("hold time is now 90")
+                    
+                }
+                if (round + 1 == 3){
+                    setHoldTime(120)
+                    console.log("hold time is now 120")
+                }
+            } else {
+                if (round + 1 == 2){
+                    setHoldTime(60)
+                    console.log("hold time is now 90")
+                    
+                }
+                if (round + 1 == 3){
+                    setHoldTime(90)
+                    console.log("hold time is now 120")
+                }
+            }
+            setOutBreathTimer(holdTime); // Reset the timer
         if (count > 30) {
             setHoldBreathOut(false);
             setHoldBreathIn(true);
@@ -160,10 +176,21 @@ function EnergyBreathing(setState: any,
     ){
     if (active == false){
         return (
-            <CustomButton title="Start" onPress={() => {
-                setActive(true)
-            }
-            }/>
+            <View>
+                <Header title="Energy Breathing" subtitle="Pick Yor Poision"/>
+                <View>
+                <CustomButton title="Start" onPress={() => {
+                    setActive(true)
+                    setAdvanced(false)
+                }
+                }/>
+                <CustomButton title="Start Intermediate" onPress={() => {
+                    setActive(true)
+                    setAdvanced(true)
+                }
+                }/>
+                </View>
+            </View>
         )
     }
 
@@ -206,7 +233,7 @@ function EnergyBreathing(setState: any,
                     setHoldBreathIn(false)
                     setHoldBreathOut(false)
                     setHoldTime(advanced ? 60 : 30)
-                    setOutBreathTimer(30)
+                    setOutBreathTimer(advanced ? 60 : 30)
                 }} />
                 </View>
         )
