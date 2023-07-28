@@ -1,4 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dimensions } from 'react-native';
+
+export function getScreenDimensions() {
+  return Dimensions.get('window');
+}
+
+export function getCenterOfScreen() {
+  const { width, height } = getScreenDimensions();
+  return { x: width / 2, y: height / 2 };
+}
+
 
 export async function clearAllAsyncStorage() {
     try {
