@@ -18,16 +18,18 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
     const [holdBreathOut, setHoldBreathOut] = useState(false)
     const [outBreathTimer, setOutBreathTimer] = useState(0)
     const [holdBreathIn, setHoldBreathIn] = useState(false)
-    const [holdTime, setHoldTime] = useState(20)
+    const [holdTime, setHoldTime] = useState(30)
+    const [advanced, setAdvanced] = useState(false)
 
 
     useEffect(() => {
         let timer;
       
         if (holdBreathIn) {
-          setTimer(15);
-      
-          timer = setInterval(() => {
+            setCount(1);
+            setTimer(15);
+            setHoldBreathOut(false);
+            timer = setInterval(() => {
             setTimer(prevTimer => prevTimer - 1);
             }, 1000);
         }
@@ -37,7 +39,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
     
     
     useEffect(() => {
-        if (timer === 0) {
+        if (timer === 0 && holdBreathIn) {
             setRound(round + 1)
             console.log("round is " + round)
             setTimer(15);
@@ -55,7 +57,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
             console.log("timer is running: " + outBreathTimer)
         }
         
-        if (count > 30 && !holdBreathIn) {
+        if (count > 30 || holdBreathOut) {
             countDown();
           timeoutId = setInterval(countDown, 1000);
           setHoldBreathOut(true);
@@ -68,17 +70,19 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
         return () => {
             clearInterval(timeoutId);
         };
-      }, [count]);
+      }, [count,holdBreathOut]);
       
       useEffect(() => {
           if (outBreathTimer === 0) {
-              if (round == 2){
-                  setHoldTime(30)
+            setCount(1);
+
+              if (round + 1 == 2){
+                  setHoldTime(60)
                   console.log("hold time is now 90")
                   
               }
-              if (round == 3){
-                  setHoldTime(60)
+              if (round + 1 == 3){
+                  setHoldTime(120)
                   console.log("hold time is now 120")
               }
               setOutBreathTimer(holdTime); // Reset the timer
@@ -114,7 +118,10 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
                 holdBreathIn,
                 setHoldBreathIn,
                 outBreathTimer,
-                setHoldTime
+                setOutBreathTimer,
+                setHoldTime,
+                advanced,
+                setAdvanced
             )
         )
     }
@@ -146,7 +153,10 @@ function EnergyBreathing(setState: any,
     holdBreathIn,
     setHoldBreathIn,
     outBreathTimer,
-    setHoldTime
+    setOutBreathTimer,
+    setHoldTime,
+    advanced,
+    setAdvanced
     ){
     if (active == false){
         return (
@@ -178,7 +188,7 @@ function EnergyBreathing(setState: any,
                     <Text>{timer}</Text>
                     {/* timer */}
                     <Text>
-                        Good work on round {round - 1}!
+                        Good work on round {round}!
                     </Text>
                 </View>
             </View>
@@ -195,7 +205,8 @@ function EnergyBreathing(setState: any,
                     setActive(false)
                     setHoldBreathIn(false)
                     setHoldBreathOut(false)
-                    setHoldTime(60)
+                    setHoldTime(advanced ? 60 : 30)
+                    setOutBreathTimer(30)
                 }} />
                 </View>
         )
@@ -240,7 +251,7 @@ function EnergyBreathing(setState: any,
                     }}
                     
                     onTitleChange={setTitle}
-        
+                    
                     onCountChange={setCount}
                     />
                     {count == 30 ? <Text style={{textAlign: "center"}}>DEEP BREATH</Text> : <Text></Text>}
@@ -252,14 +263,15 @@ function EnergyBreathing(setState: any,
                         setActive(false)
                         setHoldBreathIn(false)
                         setHoldBreathOut(false)
-                        setHoldTime(60)
+                        setHoldTime(advanced ? 60 : 30)
+                        setOutBreathTimer(advanced ? 60 : 30)
                     }} />
                     <CustomButton title="End Session" onPress={() => setState("None")}/>
                 </View>
             </View>
         </View>
     )
-
+    
     }
 }   
 
