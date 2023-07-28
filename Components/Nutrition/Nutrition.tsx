@@ -6,6 +6,14 @@ function Nutrition() {
         <View>
             <Text>Nutrition</Text>
             <Text>{`Today is: ${FormattedDate()}`}</Text>
+            <View style={
+                {
+                    alignContent: "center",
+                    justifyContent: "center",
+                }
+            }>
+                <Text style={{width: "100%"}}>Coming soon!</Text>
+            </View>
         </View>
     )
 }
