@@ -9,6 +9,7 @@ import  Home  from './Components/Home';
 import Fasting from './Fasting';
 import { ExerciseSettings } from './Components/Exercise/Settings';
 import  Nutrition  from  './Components/Nutrition/Nutrition';
+import Breathing  from  './Components/Breathing/Breathing';
 
 const Stack = createStackNavigator();
 // options={{"headerShown": false}
@@ -25,12 +26,13 @@ export default function App() {
       flex: 1,
       height: '100%',
       alignContent: 'center',
+      justifyContent: 'center',
       
     }}>
       <NavigationContainer>
         <Stack.Navigator initialRouteName='Exercise List'>
           {/*populate each exercise screen */}
-          <Stack.Screen name="Exercise List" component={Home}/>
+          <Stack.Screen name="Home Page" component={Home}/>
           { generateExerciseScreens()}
           <Stack.Screen name="General Exercises" component={GeneralExercises} />
           {/* <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} /> */}
@@ -38,7 +40,7 @@ export default function App() {
           <Stack.Screen name="Fasting" component={Fasting} /> 
           <Stack.Screen name="Exercise Settings" component={ExerciseSettings} />
           <Stack.Screen name="Nutrition" component={Nutrition} />
-
+          <Stack.Screen name="Breathing" component={Breathing} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
