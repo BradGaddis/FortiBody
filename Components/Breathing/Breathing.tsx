@@ -14,7 +14,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
     const [round, setRound] = useState(1)
     const [active, setActive] = useState(false)
     const [title, setTitle] = useState("Start")    
-    const [count, setCount] = useState(0)
+    const [count, setCount] = useState(1)
     const [timer, setTimer] = useState(0)
     const [holdBreathOut, setHoldBreathOut] = useState(false)
     const [outBreathTimer, setOutBreathTimer] = useState(0)
@@ -27,7 +27,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
         let timer;
       
         if (holdBreathIn) {
-            setCount(1);
+            setCount(0);
             setTimer(15);
             setHoldBreathOut(false);
             timer = setInterval(() => {
@@ -79,7 +79,7 @@ function Breathing({ navigation, route}: { navigation: any, route: any }) {
       
       useEffect(() => {
           if (outBreathTimer === 0) {
-            setCount(1);
+            setCount(0);
             if(advanced) {
                 if (round + 1 == 2){
                     setHoldTime(90)
@@ -268,8 +268,8 @@ function EnergyBreathing(setState: any,
                         }
                     }
                     pulseSpeed={{
-                        in: 100,
-                        out: 100
+                        in: 1500,
+                        out: 1500
                     }}
                     
                     size={{
@@ -286,7 +286,7 @@ function EnergyBreathing(setState: any,
                     {/* <Text>Tap button pulsing view to stop this round</Text> */}
                     <CustomButton title="Restart" onPress={()=> {
                         setRound(1)
-                        setCount(1)
+                        setCount(0)
                         setActive(false)
                         setHoldBreathIn(false)
                         setHoldBreathOut(false)
