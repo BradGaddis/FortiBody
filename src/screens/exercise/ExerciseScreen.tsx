@@ -9,14 +9,18 @@ import {
   Image,
   Dimensions,
   Modal,
+  FlatList,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { total_exercises_dict } from '@/services/exercise/exercise_store';
 import AICameraView from '@/components/camera/AICameraView';
 import type { Pose, FormFeedback, RepState } from '@/types/pose';
 import { createInitialRepState } from '@/services/ai/repCounter';
+
+const HISTORY_STORAGE_KEY = '@exercise_history';
 
 interface ExerciseScreenProps {
   name: string;
@@ -56,12 +60,37 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const [aiCurrentAngle, setAiCurrentAngle] = useState<number | null>(null);
   const [aiFormFeedback, setAiFormFeedback] = useState<FormFeedback[]>([]);
   const [aiRepOverride, setAiRepOverride] = useState(0);
+  const [history, setHistory] = useState<SessionData[]>([]);
 
   const exercise = total_exercises_dict.find(
     (ex: any) => ex.name.toLowerCase() === name.toLowerCase()
   );
 
-  const savedSessions: SessionData[] = [];
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setHistory(parsed);
+      }
+    } catch (error) {
+      console.log('Failed to load history:', error);
+    }
+  };
+
+  const saveToHistory = async (session: SessionData) => {
+    try {
+      const newHistory = [session, ...history];
+      setHistory(newHistory);
+      await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
+    } catch (error) {
+      console.log('Failed to save history:', error);
+    }
+  };
 
   const handleAddSet = () => {
     if (currentSet.reps > 0 && currentSet.weight >= 0) {
@@ -99,18 +128,29 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
       Alert.alert('No Sets', 'Complete at least one set before finishing.');
       return;
     }
+    const totalVolume = sessionSets.reduce((total, set) => total + set.reps * set.weight, 0);
+    const maxWeight = Math.max(...sessionSets.map(s => s.weight));
+    
     Alert.alert(
       'Finish Session',
-      `You completed ${sessionSets.length} sets. Save this session?`,
+      `You completed ${sessionSets.length} sets.\nVolume: ${totalVolume}kg\nMax: ${maxWeight}kg\n\nSave this session?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Save',
           style: 'default',
           onPress: () => {
+            const session: SessionData = {
+              id: Date.now().toString(),
+              exerciseName: name,
+              date: new Date(),
+              sets: [...sessionSets],
+              notes: sessionNotes,
+            };
+            saveToHistory(session);
             setSessionSets([]);
             setSessionNotes('');
-            Alert.alert('Saved', 'Session saved to history.');
+            setActiveTab('history');
           },
         },
         {
@@ -362,13 +402,70 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
 
         {activeTab === 'history' && (
           <View style={styles.historySection}>
-            <View style={styles.emptyHistory}>
-              <Ionicons name="calendar-outline" size={64} color="#CCC" />
-              <Text style={styles.emptyHistoryTitle}>No History Yet</Text>
-              <Text style={styles.emptyHistoryText}>
-                Complete your first session to see your progress here
-              </Text>
-            </View>
+            {history.length === 0 ? (
+              <View style={styles.emptyHistory}>
+                <Ionicons name="calendar-outline" size={64} color="#CCC" />
+                <Text style={styles.emptyHistoryTitle}>No History Yet</Text>
+                <Text style={styles.emptyHistoryText}>
+                  Complete your first session to see your progress here
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={history}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const totalVolume = item.sets.reduce((total, set) => total + set.reps * set.weight, 0);
+                  const maxWeight = Math.max(...item.sets.map(s => s.weight));
+                  const dateStr = item.date instanceof Date 
+                    ? item.date.toLocaleDateString() 
+                    : new Date(item.date).toLocaleDateString();
+                  
+                  return (
+                    <View style={styles.historyCard}>
+                      <View style={styles.historyCardHeader}>
+                        <Text style={styles.historyExerciseName}>{item.exerciseName}</Text>
+                        <Text style={styles.historyDate}>{dateStr}</Text>
+                      </View>
+                      
+                      <View style={styles.historyStatsRow}>
+                        <View style={styles.historyStat}>
+                          <Ionicons name="layers" size={16} color="#4CAF50" />
+                          <Text style={styles.historyStatText}>{item.sets.length} sets</Text>
+                        </View>
+                        <View style={styles.historyStat}>
+                          <Ionicons name="fitness" size={16} color="#FF5722" />
+                          <Text style={styles.historyStatText}>{totalVolume}kg vol</Text>
+                        </View>
+                        <View style={styles.historyStat}>
+                          <Ionicons name="trending-up" size={16} color="#2196F3" />
+                          <Text style={styles.historyStatText}>{maxWeight}kg max</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.historySetsRow}>
+                        {item.sets.slice(0, 5).map((set, idx) => (
+                          <View key={idx} style={styles.historySetBadge}>
+                            <Text style={styles.historySetText}>{set.weight}kg</Text>
+                            <Text style={styles.historySetReps}>{set.reps}</Text>
+                          </View>
+                        ))}
+                        {item.sets.length > 5 && (
+                          <View style={[styles.historySetBadge, styles.historySetMore]}>
+                            <Text style={styles.historySetText}>+{item.sets.length - 5}</Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {item.notes ? (
+                        <Text style={styles.historyNotes}>{item.notes}</Text>
+                      ) : null}
+                    </View>
+                  );
+                }}
+                contentContainerStyle={styles.historyList}
+              />
+            )}
           </View>
         )}
       </ScrollView>
@@ -381,9 +478,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           currentAngle={aiCurrentAngle}
           formFeedback={aiFormFeedback}
           exercise={name}
-          onExerciseChange={(newExercise) => {
-            console.log('Exercise changed to:', newExercise);
-          }}
           onClose={() => {
             setIsAIMode(false);
             setAiRepOverride(0);
@@ -738,6 +832,78 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 4,
     textAlign: 'center',
+  },
+  historyList: {
+    paddingBottom: 20,
+  },
+  historyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  historyExerciseName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  historyDate: {
+    fontSize: 13,
+    color: '#888',
+  },
+  historyStatsRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  historyStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  historyStatText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 6,
+  },
+  historySetsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  historySetBadge: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  historySetText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  historySetReps: {
+    fontSize: 10,
+    color: '#888',
+  },
+  historySetMore: {
+    backgroundColor: '#E8F5E9',
+  },
+  historyNotes: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
   },
   errorText: {
     fontSize: 16,
