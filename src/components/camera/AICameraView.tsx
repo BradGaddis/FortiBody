@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,16 +13,9 @@ import type { Pose, Keypoint, FormFeedback, RepState } from '../../types/pose';
 import { SKELETON_CONNECTIONS } from '../../types/pose';
 import { getPhaseDisplayName } from '../../services/ai/repCounter';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { Dimensions } from 'react-native';
 
-const EXERCISES = [
-  'Push-ups',
-  'Squats',
-  'Plank',
-  'Lunges',
-  'Pull-ups',
-  'Sit-ups',
-];
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface AICameraViewProps {
   isActive: boolean;
@@ -32,7 +24,6 @@ interface AICameraViewProps {
   currentAngle: number | null;
   formFeedback: FormFeedback[];
   exercise: string;
-  onExerciseChange: (exercise: string) => void;
   onClose: () => void;
   onRepAdjust?: (adjustment: number) => void;
 }
@@ -48,7 +39,9 @@ const renderSkeleton = (keypoints: Keypoint[], scaleX: number, scaleY: number) =
 
   return (
     <G>
-      {SKELETON_CONNECTIONS.map(([start, end], index) => {
+      {SKELETON_CONNECTIONS.map((connection, idx) => {
+        const start = connection[0] as number;
+        const end = connection[1] as number;
         const kpStart = keypoints[start];
         const kpEnd = keypoints[end];
 
@@ -61,7 +54,7 @@ const renderSkeleton = (keypoints: Keypoint[], scaleX: number, scaleY: number) =
 
         return (
           <Line
-            key={`line-${index}`}
+            key={`line-${idx}`}
             x1={kpStart.x * SCREEN_WIDTH * scaleX}
             y1={kpStart.y * 350 * scaleY}
             x2={kpEnd.x * SCREEN_WIDTH * scaleX}
@@ -73,13 +66,13 @@ const renderSkeleton = (keypoints: Keypoint[], scaleX: number, scaleY: number) =
         );
       })}
 
-      {keypoints.map((kp, index) => {
-        if (renderedPoints.has(index)) return null;
+      {keypoints.map((kp, idx) => {
+        if (renderedPoints.has(idx)) return null;
         if (kp.score < 0.3) return null;
 
         return (
           <Circle
-            key={`point-${index}`}
+            key={`point-${idx}`}
             cx={kp.x * SCREEN_WIDTH * scaleX}
             cy={kp.y * 350 * scaleY}
             r={6}
@@ -98,12 +91,10 @@ const AICameraView: React.FC<AICameraViewProps> = ({
   currentAngle,
   formFeedback,
   exercise,
-  onExerciseChange,
   onClose,
   onRepAdjust,
 }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
   const [manualOverride, setManualOverride] = useState(0);
 
   useEffect(() => {
@@ -114,31 +105,8 @@ const AICameraView: React.FC<AICameraViewProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!exercise) return;
-    for (let i = 0; i < EXERCISES.length; i++) {
-      if (EXERCISES[i].toLowerCase().includes(exercise.toLowerCase())) {
-        setSelectedExerciseIndex(i);
-        setManualOverride(0);
-        return;
-      }
-    }
+    setManualOverride(0);
   }, [exercise]);
-
-  const handleExerciseSelect = useCallback((index: number) => {
-    if (index >= 0 && index < EXERCISES.length) {
-      setSelectedExerciseIndex(index);
-      setManualOverride(0);
-      onExerciseChange(EXERCISES[index]);
-    }
-  }, [onExerciseChange]);
-
-  const handleNextExercise = useCallback(() => {
-    handleExerciseSelect((selectedExerciseIndex + 1) % EXERCISES.length);
-  }, [selectedExerciseIndex, handleExerciseSelect]);
-
-  const handlePrevExercise = useCallback(() => {
-    handleExerciseSelect((selectedExerciseIndex - 1 + EXERCISES.length) % EXERCISES.length);
-  }, [selectedExerciseIndex, handleExerciseSelect]);
 
   const handleAddRep = useCallback(() => {
     setManualOverride(prev => prev + 1);
@@ -210,14 +178,11 @@ const AICameraView: React.FC<AICameraViewProps> = ({
           <Ionicons name="close" size={24} color="#FFF" />
         </TouchableOpacity>
 
-        <View style={styles.exerciseSelector}>
-          <TouchableOpacity style={styles.exerciseNavBtn} onPress={handlePrevExercise}>
-            <Ionicons name="chevron-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.exerciseName}>{EXERCISES[selectedExerciseIndex]}</Text>
-          <TouchableOpacity style={styles.exerciseNavBtn} onPress={handleNextExercise}>
-            <Ionicons name="chevron-forward" size={24} color="#FFF" />
-          </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <View style={styles.exerciseBadge}>
+            <Ionicons name="fitness" size={18} color="#4CAF50" />
+            <Text style={styles.exerciseName}>{exercise}</Text>
+          </View>
         </View>
 
         <View style={styles.statsRow}>
@@ -281,9 +246,9 @@ const AICameraView: React.FC<AICameraViewProps> = ({
 
         <View style={styles.feedbackContainer}>
           {formFeedback.length > 0 ? (
-            formFeedback.map((feedback, index) => (
+            formFeedback.map((feedback, idx) => (
               <View
-                key={index}
+                key={idx}
                 style={[
                   styles.feedbackItem,
                   feedback.type === 'error' && styles.feedbackError,
@@ -382,25 +347,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  exerciseSelector: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  exerciseNavBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(76, 175, 80, 0.8)',
-    justifyContent: 'center',
+  exerciseBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   exerciseName: {
     color: '#FFF',
-    fontSize: 22,
-    fontWeight: '700',
-    marginHorizontal: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   statsRow: {
     flexDirection: 'row',
@@ -550,3 +514,4 @@ const styles = StyleSheet.create({
 });
 
 export default AICameraView;
+
