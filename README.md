@@ -944,3 +944,177 @@ I can continue in any direction you prefer! 🚀
 **Note**: This roadmap represents a comprehensive cleanup and modernization of the FortiBody application. Each phase builds upon the previous one, ensuring a solid foundation before adding advanced features. The timeline is approximate and can be adjusted based on available development time and resources.
 
 Phase 1 Complete - Professional Foundation Achieved!
+
+---
+
+## AI WORKOUT MONITORING (NEW FEATURE)
+
+### Overview
+
+Real-time AI-powered workout tracking using on-device pose estimation with form feedback and automatic rep counting.
+
+### Technology Stack
+
+| Component | Choice | Reason |
+|-----------|--------|--------|
+| Camera | `react-native-vision-camera` | High-performance, supports frame processors |
+| ML Framework | TensorFlow Lite - MoveNet Lightning | Lightweight, optimized for mobile, 30+ FPS |
+| Keypoints | 17-body model (COCO format) | Industry standard, good accuracy |
+| Platform | iOS + Android | Cross-platform support |
+
+### COCO Keypoints (17 points)
+
+```
+0: nose      5: left_shoulder   9: left_elbow     13: left_knee
+1: left_eye  6: right_shoulder 10: right_elbow    14: right_knee
+2: right_eye 7: left_wrist     11: left_hip       15: left_ankle
+3: left_ear  8: right_wrist    12: right_hip      16: right_ankle
+4: right_ear
+```
+
+### Supported Exercises
+
+| Exercise | Keypoints | Up Angle | Down Angle | Form Feedback |
+|----------|-----------|----------|------------|---------------|
+| Pushups | [6, 8, 10] (shoulder, elbow, wrist) | 160° | 90° | "Go lower", "Don't arch back" |
+| Squats | [11, 13, 15] (hip, knee, ankle) | 160° | 90° | "Knees tracking toes", "Keep chest up" |
+| Pullups | [6, 8, 10] (shoulder, elbow, wrist) | 170° | 90° | "Full extension at bottom" |
+| Planks | [5, 11, 13] (shoulder, hip, knee) | body alignment | - | "Don't drop hips", "Align shoulders" |
+| Lunges | [11, 13, 15] (hip, knee, ankle) | 160° | 90° | "Keep front knee over ankle" |
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  ExerciseScreen                      │
+├─────────────────────────────────────────────────────┤
+│  ┌─────────────┐    ┌─────────────┐    ┌──────────┐ │
+│  │  Camera     │───▶│  Pose       │───▶│  Rep     │ │
+│  │  Preview    │    │  Detection  │    │  Counter │ │
+│  └─────────────┘    └─────────────┘    └──────────┘ │
+│                          │                  │        │
+│                          ▼                  ▼        │
+│                    ┌─────────────┐    ┌──────────┐  │
+│                    │  Angle      │    │  Form    │  │
+│                    │  Calculator │    │  Feedback│  │
+│                    └─────────────┘    └──────────┘  │
+└─────────────────────────────────────────────────────┘
+```
+
+### Implementation Plan
+
+#### Phase 1: Setup (1 day)
+
+- [ ] Install dependencies:
+  ```bash
+  npx expo install react-native-vision-camera
+  yarn add react-native-fast-tflite
+  ```
+- [ ] Add camera permissions to `app.json`
+- [ ] Download `movenet_lightning.tflite` model to `assets/models/`
+
+**New files:**
+- `src/services/ai/PoseDetectionService.ts`
+- `src/types/pose.ts`
+
+#### Phase 2: Core Detection (2 days)
+
+- [ ] Create `usePoseDetection` hook that loads TFLite model
+- [ ] Build frame processor to run inference on camera frames
+- [ ] Parse keypoints output with confidence scores
+
+**Exercise Config Pattern:**
+```typescript
+const PUSHUP_CONFIG = {
+  name: 'Push-ups',
+  keypoints: [6, 8, 10], // shoulder, elbow, wrist
+  upAngle: 160,
+  downAngle: 90,
+  formRules: [
+    { check: (angles) => angles.elbow < 70, message: 'Go lower' },
+    { check: (angles) => angles.elbow > 100, message: 'Too low' },
+  ]
+}
+```
+
+**New files:**
+- `src/hooks/usePoseDetection.ts`
+- `src/services/ai/exerciseConfigs.ts`
+
+#### Phase 3: Rep Counting State Machine
+
+```
+State: IDLE → DOWN → UP → COMPLETE → IDLE
+
+Pushup Example:
+- Start: arms at 160° (UP)
+- User lowers: arms reach 90° → State: DOWN
+- User raises: arms reach 160° → State: COMPLETE, Reps +1
+- Debounce: 500ms before accepting next rep
+```
+
+#### Phase 4: Camera UI Component
+
+- [ ] Overlay skeleton (keypoints + connections)
+- [ ] Color-coded feedback: green = good, yellow = warning, red = fix form
+- [ ] Floating rep counter
+- [ ] Exercise selection dropdown
+
+**New file:**
+- `src/components/camera/AICameraView.tsx`
+
+#### Phase 5: Integration
+
+- [ ] Add "AI Mode" toggle in ExerciseScreen (Track tab)
+- [ ] Persist workout sessions with AI data
+- [ ] Show session summary with rep counts and form accuracy
+
+### Files to Create
+
+```
+src/
+├── components/
+│   └── camera/
+│       └── AICameraView.tsx     # Camera overlay + skeleton
+├── hooks/
+│   └── usePoseDetection.ts      # TFLite model hook
+├── services/
+│   └── ai/
+│       ├── PoseDetectionService.ts    # Core detection
+│       ├── exerciseConfigs.ts         # Exercise definitions
+│       └── formAnalysis.ts            # Angle calculations
+├── types/
+│   └── pose.ts                 # Keypoint, pose types
+└── assets/
+    └── models/
+        └── movenet_lightning.tflite
+```
+
+### Form Feedback Examples
+
+```
+Pushup:
+  ✓ "3 reps - Good form!"
+  ⚠ "Go lower (current: 105°, target: 90°)"
+  ⚠ "Don't arch your back"
+  ⚠ "Elbows flared - try 45° angle"
+
+Squat:
+  ✓ "5 reps - Perfect depth!"
+  ⚠ "Keep chest up"
+  ⚠ "Knees caving inward"
+```
+
+### Estimated Effort
+
+**5-7 days total**
+
+### Tradeoff Note
+
+MoveNet Lightning is faster (~5ms inference) but slightly less accurate than Thunder (~30ms). For workout monitoring (where user is clearly visible and close to camera), this tradeoff is acceptable.
+
+### References
+
+- [Ultralytics YOLO Workouts Monitoring](https://docs.ultralytics.com/guides/workouts-monitoring/)
+- [TensorFlow Lite MoveNet](https://www.tensorflow.org/lite/examples/pose_estimation/overview)
+- [React Native Vision Camera](https://mrousavy.com/blog/VisionCamera-Pose-Dection-TFLite)
