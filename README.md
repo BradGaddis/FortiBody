@@ -1005,13 +1005,13 @@ Real-time AI-powered workout tracking using on-device pose estimation with form 
 
 #### Phase 1: Setup (1 day)
 
-- [ ] Install dependencies:
+- [x] Install dependencies:
   ```bash
   npx expo install react-native-vision-camera
-  yarn add react-native-fast-tflite
+  yarn add @tensorflow/tfjs @tensorflow/tfjs-react-native @tensorflow-models/pose-detection
   ```
-- [ ] Add camera permissions to `app.json`
-- [ ] Download `movenet_lightning.tflite` model to `assets/models/`
+- [x] Add camera permissions to `app.json`
+- [x] Download `movenet_lightning.tflite` model to `assets/models/
 
 **New files:**
 - `src/services/ai/PoseDetectionService.ts`
@@ -1019,9 +1019,9 @@ Real-time AI-powered workout tracking using on-device pose estimation with form 
 
 #### Phase 2: Core Detection (2 days)
 
-- [ ] Create `usePoseDetection` hook that loads TFLite model
-- [ ] Build frame processor to run inference on camera frames
-- [ ] Parse keypoints output with confidence scores
+- [x] Create `usePoseDetection` hook that loads TFLite model
+- [x] Build frame processor to run inference on camera frames
+- [x] Parse keypoints output with confidence scores
 
 **Exercise Config Pattern:**
 ```typescript
@@ -1038,8 +1038,8 @@ const PUSHUP_CONFIG = {
 ```
 
 **New files:**
-- `src/hooks/usePoseDetection.ts`
-- `src/services/ai/exerciseConfigs.ts`
+- [x] `src/hooks/usePoseDetection.ts`
+- [x] `src/services/ai/exerciseConfigs.ts`
 
 #### Phase 3: Rep Counting State Machine
 
@@ -1069,25 +1069,27 @@ Pushup Example:
 - [ ] Persist workout sessions with AI data
 - [ ] Show session summary with rep counts and form accuracy
 
-### Files to Create
+### Files Created
 
 ```
 src/
 ├── components/
 │   └── camera/
-│       └── AICameraView.tsx     # Camera overlay + skeleton
+│       └── AICameraView.tsx     # Camera overlay + skeleton (TODO)
 ├── hooks/
-│   └── usePoseDetection.ts      # TFLite model hook
+│   └── usePoseDetection.ts      # TensorFlow.js pose detection hook (TODO)
 ├── services/
 │   └── ai/
-│       ├── PoseDetectionService.ts    # Core detection
-│       ├── exerciseConfigs.ts         # Exercise definitions
-│       └── formAnalysis.ts            # Angle calculations
+│       ├── PoseDetectionService.ts    # Core detection with MoveNet (DONE)
+│       ├── exerciseConfigs.ts         # Exercise definitions (DONE)
+│       ├── formAnalysis.ts            # Angle calculations (DONE)
+│       ├── repCounter.ts              # Rep counting state machine (DONE)
+│       └── index.ts                   # Export all services (DONE)
 ├── types/
-│   └── pose.ts                 # Keypoint, pose types
+│   └── pose.ts                 # Keypoint, pose types (DONE)
 └── assets/
     └── models/
-        └── movenet_lightning.tflite
+        └── movenet_lightning.tflite (TODO - download from TensorFlow Hub)
 ```
 
 ### Form Feedback Examples
@@ -1118,3 +1120,26 @@ MoveNet Lightning is faster (~5ms inference) but slightly less accurate than Thu
 - [Ultralytics YOLO Workouts Monitoring](https://docs.ultralytics.com/guides/workouts-monitoring/)
 - [TensorFlow Lite MoveNet](https://www.tensorflow.org/lite/examples/pose_estimation/overview)
 - [React Native Vision Camera](https://mrousavy.com/blog/VisionCamera-Pose-Dection-TFLite)
+
+---
+
+## PROGRESS
+
+### Completed (Phase 1-2)
+- [x] TensorFlow.js + MoveNet installation
+- [x] Core pose detection service
+- [x] Exercise configurations (6 exercises)
+- [x] Form analysis utilities
+- [x] Rep counting state machine
+- [x] TypeScript types
+
+### In Progress (Phase 3)
+- [ ] usePoseDetection hook
+- [ ] AICameraView component
+- [ ] Integration with ExerciseScreen
+
+### Next Steps
+1. Create `usePoseDetection` hook for React Native
+2. Build `AICameraView` with skeleton overlay
+3. Add "AI Mode" toggle to ExerciseScreen
+4. Test on device
