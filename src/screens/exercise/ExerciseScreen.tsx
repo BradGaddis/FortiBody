@@ -92,6 +92,25 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     }
   };
 
+  const deleteFromHistory = async (sessionId: string) => {
+    Alert.alert(
+      'Delete Session',
+      'Are you sure you want to delete this session?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const newHistory = history.filter(s => s.id !== sessionId);
+            setHistory(newHistory);
+            await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
+          },
+        },
+      ]
+    );
+  };
+
   const handleAddSet = () => {
     if (currentSet.reps > 0 && currentSet.weight >= 0) {
       setSessionSets([...sessionSets, { ...currentSet, completed: false }]);
@@ -459,8 +478,16 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   return (
                     <View style={styles.historyCard}>
                       <View style={styles.historyCardHeader}>
-                        <Text style={styles.historyExerciseName}>{item.exerciseName}</Text>
-                        <Text style={styles.historyDate}>{dateStr}</Text>
+                        <View>
+                          <Text style={styles.historyExerciseName}>{item.exerciseName}</Text>
+                          <Text style={styles.historyDate}>{dateStr}</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.deleteHistoryBtn}
+                          onPress={() => deleteFromHistory(item.id)}
+                        >
+                          <Ionicons name="trash" size={18} color="#F44336" />
+                        </TouchableOpacity>
                       </View>
                       
                       <View style={styles.historyStatsRow}>
@@ -922,6 +949,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  deleteHistoryBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
   },
   historyExerciseName: {
     fontSize: 16,
