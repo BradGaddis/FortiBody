@@ -386,17 +386,52 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
               </View>
             )}
 
-            <TouchableOpacity style={styles.finishBtn} onPress={handleFinishSession}>
-              <Text style={styles.finishBtnText}>Finish Session</Text>
-            </TouchableOpacity>
+            <View style={styles.sessionActions}>
+              <View style={styles.sessionSummary}>
+                <Text style={styles.sessionSummaryText}>
+                  {sessionSets.length} sets • {getTotalVolume()}kg volume
+                </Text>
+              </View>
 
-            <TouchableOpacity
-              style={[styles.finishBtn, isAIMode && styles.aiModeActive]}
-              onPress={() => setIsAIMode(true)}
-            >
-              <Ionicons name="analytics" size={20} color="#FFF" />
-              <Text style={styles.finishBtnText}>Start AI Tracking</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.saveBtn]}
+                onPress={handleFinishSession}
+              >
+                <Ionicons name="save" size={20} color="#FFF" />
+                <Text style={styles.actionBtnText}>Save Session</Text>
+              </TouchableOpacity>
+
+              {sessionSets.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.discardBtn]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Discard Session',
+                      'Are you sure you want to discard all sets?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Discard',
+                          style: 'destructive',
+                          onPress: () => setSessionSets([]),
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Text style={[styles.actionBtnText, styles.discardBtnText]}>Discard</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.aiBtn, isAIMode && styles.aiModeActive]}
+                onPress={() => setIsAIMode(true)}
+              >
+                <Ionicons name="analytics" size={20} color="#FFF" />
+                <Text style={styles.actionBtnText}>AI Tracking</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -808,9 +843,49 @@ const styles = StyleSheet.create({
   },
   aiModeActive: {
     backgroundColor: '#4CAF50',
-    flexDirection: 'row',
-    justifyContent: 'center',
+  },
+  sessionActions: {
+    marginTop: 16,
+  },
+  sessionSummary: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
     alignItems: 'center',
+  },
+  sessionSummaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingVertical: 14,
+    marginBottom: 10,
+  },
+  saveBtn: {
+    backgroundColor: '#4CAF50',
+  },
+  discardBtn: {
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 67, 54, 0.3)',
+  },
+  actionBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  discardBtnText: {
+    color: '#F44336',
+  },
+  aiBtn: {
+    backgroundColor: '#1A1A1A',
   },
   historySection: {
     padding: 16,
