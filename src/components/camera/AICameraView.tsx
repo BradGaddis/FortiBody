@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ interface AICameraViewProps {
   exercise: string;
   onExerciseChange: (exercise: string) => void;
   onClose: () => void;
+  onRepAdjust?: (adjustment: number) => void;
 }
 
 const getKeypointColor = (score: number): string => {
@@ -99,9 +100,11 @@ const AICameraView: React.FC<AICameraViewProps> = ({
   exercise,
   onExerciseChange,
   onClose,
+  onRepAdjust,
 }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
+  const [manualOverride, setManualOverride] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -115,25 +118,44 @@ const AICameraView: React.FC<AICameraViewProps> = ({
     for (let i = 0; i < EXERCISES.length; i++) {
       if (EXERCISES[i].toLowerCase().includes(exercise.toLowerCase())) {
         setSelectedExerciseIndex(i);
+        setManualOverride(0);
         return;
       }
     }
   }, [exercise]);
 
-  const handleExerciseSelect = (index: number) => {
+  const handleExerciseSelect = useCallback((index: number) => {
     if (index >= 0 && index < EXERCISES.length) {
       setSelectedExerciseIndex(index);
+      setManualOverride(0);
       onExerciseChange(EXERCISES[index]);
     }
-  };
+  }, [onExerciseChange]);
 
-  const handleNextExercise = () => {
+  const handleNextExercise = useCallback(() => {
     handleExerciseSelect((selectedExerciseIndex + 1) % EXERCISES.length);
-  };
+  }, [selectedExerciseIndex, handleExerciseSelect]);
 
-  const handlePrevExercise = () => {
+  const handlePrevExercise = useCallback(() => {
     handleExerciseSelect((selectedExerciseIndex - 1 + EXERCISES.length) % EXERCISES.length);
-  };
+  }, [selectedExerciseIndex, handleExerciseSelect]);
+
+  const handleAddRep = useCallback(() => {
+    setManualOverride(prev => prev + 1);
+    onRepAdjust?.(1);
+  }, [onRepAdjust]);
+
+  const handleSubtractRep = useCallback(() => {
+    setManualOverride(prev => prev - 1);
+    onRepAdjust?.(-1);
+  }, [onRepAdjust]);
+
+  const handleResetOverride = useCallback(() => {
+    setManualOverride(0);
+  }, []);
+
+  const displayRepCount = repState.repCount + manualOverride;
+  const hasOverride = manualOverride !== 0;
 
   if (hasPermission === null) {
     return (
@@ -152,6 +174,9 @@ const AICameraView: React.FC<AICameraViewProps> = ({
         <Text style={styles.permissionText}>
           Please enable camera access in your device settings to use AI workout tracking.
         </Text>
+        <TouchableOpacity style={styles.closeBtnLarge} onPress={onClose}>
+          <Text style={styles.closeBtnLargeText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -198,7 +223,14 @@ const AICameraView: React.FC<AICameraViewProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Reps</Text>
-            <Text style={styles.statValue}>{repState.repCount}</Text>
+            <Text style={[styles.statValue, hasOverride && styles.overrideActive]}>
+              {displayRepCount}
+            </Text>
+            {hasOverride && (
+              <Text style={styles.overrideText}>
+                {manualOverride > 0 ? '+' : ''}{manualOverride} manual
+              </Text>
+            )}
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Phase</Text>
@@ -209,6 +241,41 @@ const AICameraView: React.FC<AICameraViewProps> = ({
               <Text style={styles.statLabel}>Angle</Text>
               <Text style={styles.statValue}>{Math.round(currentAngle)}°</Text>
             </View>
+          )}
+        </View>
+
+        <View style={styles.manualControls}>
+          <Text style={styles.manualControlsTitle}>Manual Override</Text>
+          <View style={styles.overrideRow}>
+            <TouchableOpacity
+              style={[styles.overrideBtn, styles.overrideMinus]}
+              onPress={handleSubtractRep}
+              disabled={displayRepCount <= 0}
+            >
+              <Ionicons name="remove" size={24} color="#FFF" />
+            </TouchableOpacity>
+
+            <View style={styles.overrideDisplay}>
+              <Text style={styles.overrideLabel}>AI: {repState.repCount}</Text>
+              <Text style={styles.overrideDivider}>|</Text>
+              <Text style={[styles.overrideTotal, hasOverride && styles.overrideActiveText]}>
+                Total: {displayRepCount}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.overrideBtn, styles.overridePlus]}
+              onPress={handleAddRep}
+            >
+              <Ionicons name="add" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+
+          {hasOverride && (
+            <TouchableOpacity style={styles.resetBtn} onPress={handleResetOverride}>
+              <Ionicons name="refresh" size={16} color="#4CAF50" />
+              <Text style={styles.resetBtnText}>Reset to AI count</Text>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -242,7 +309,12 @@ const AICameraView: React.FC<AICameraViewProps> = ({
               <Ionicons name="arrow-down-circle" size={16} color="#FFF" />
               <Text style={styles.feedbackText}>Going down...</Text>
             </View>
-          ) : null}
+          ) : (
+            <View style={[styles.feedbackItem, styles.feedbackInfo]}>
+              <Ionicons name="information-circle" size={16} color="#FFF" />
+              <Text style={styles.feedbackText}>Get in position to start counting</Text>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -282,19 +354,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     padding: 16,
+    paddingBottom: 32,
   },
   closeBtn: {
     position: 'absolute',
-    top: -50,
+    top: -60,
     right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
+  },
+  closeBtnLarge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 24,
+  },
+  closeBtnLargeText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   exerciseSelector: {
     flexDirection: 'row',
@@ -303,16 +389,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   exerciseNavBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(76, 175, 80, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   exerciseName: {
     color: '#FFF',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     marginHorizontal: 16,
   },
@@ -335,8 +421,82 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: '#FFF',
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '700',
+  },
+  overrideActive: {
+    color: '#FF9800',
+  },
+  overrideText: {
+    color: '#FF9800',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  manualControls: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  manualControlsTitle: {
+    color: '#AAA',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  overrideRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overrideBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overrideMinus: {
+    backgroundColor: 'rgba(244, 67, 54, 0.8)',
+  },
+  overridePlus: {
+    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+  },
+  overrideDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  overrideLabel: {
+    color: '#888',
+    fontSize: 14,
+  },
+  overrideDivider: {
+    color: '#555',
+    marginHorizontal: 12,
+    fontSize: 18,
+  },
+  overrideTotal: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  overrideActiveText: {
+    color: '#FF9800',
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingVertical: 6,
+  },
+  resetBtnText: {
+    color: '#4CAF50',
+    fontSize: 13,
+    marginLeft: 6,
   },
   feedbackContainer: {
     minHeight: 60,
@@ -357,6 +517,9 @@ const styles = StyleSheet.create({
   },
   feedbackSuccess: {
     backgroundColor: 'rgba(76, 175, 80, 0.8)',
+  },
+  feedbackInfo: {
+    backgroundColor: 'rgba(33, 150, 243, 0.8)',
   },
   feedbackText: {
     color: '#FFF',

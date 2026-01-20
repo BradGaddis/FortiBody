@@ -55,6 +55,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const [aiRepState, setAiRepState] = useState<RepState>(createInitialRepState());
   const [aiCurrentAngle, setAiCurrentAngle] = useState<number | null>(null);
   const [aiFormFeedback, setAiFormFeedback] = useState<FormFeedback[]>([]);
+  const [aiRepOverride, setAiRepOverride] = useState(0);
 
   const exercise = total_exercises_dict.find(
     (ex: any) => ex.name.toLowerCase() === name.toLowerCase()
@@ -383,7 +384,13 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           onExerciseChange={(newExercise) => {
             console.log('Exercise changed to:', newExercise);
           }}
-          onClose={() => setIsAIMode(false)}
+          onClose={() => {
+            setIsAIMode(false);
+            setAiRepOverride(0);
+          }}
+          onRepAdjust={(adjustment: number) => {
+            setAiRepOverride(prev => prev + adjustment);
+          }}
         />
       </Modal>
     </View>
