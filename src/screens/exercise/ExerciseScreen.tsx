@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,15 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { total_exercises_dict } from '@/services/exercise/exercise_store';
+import AICameraView from '@/components/camera/AICameraView';
+import type { Pose, FormFeedback, RepState } from '@/types/pose';
+import { createInitialRepState } from '@/services/ai/repCounter';
 
 interface ExerciseScreenProps {
   name: string;
@@ -46,6 +50,11 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const [restTimeLeft, setRestTimeLeft] = useState(90);
   const [showNotesInput, setShowNotesInput] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
+  const [isAIMode, setIsAIMode] = useState(false);
+  const [aiPose, setAiPose] = useState<Pose | null>(null);
+  const [aiRepState, setAiRepState] = useState<RepState>(createInitialRepState());
+  const [aiCurrentAngle, setAiCurrentAngle] = useState<number | null>(null);
+  const [aiFormFeedback, setAiFormFeedback] = useState<FormFeedback[]>([]);
 
   const exercise = total_exercises_dict.find(
     (ex: any) => ex.name.toLowerCase() === name.toLowerCase()
@@ -339,6 +348,14 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             <TouchableOpacity style={styles.finishBtn} onPress={handleFinishSession}>
               <Text style={styles.finishBtnText}>Finish Session</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.finishBtn, isAIMode && styles.aiModeActive]}
+              onPress={() => setIsAIMode(true)}
+            >
+              <Ionicons name="analytics" size={20} color="#FFF" />
+              <Text style={styles.finishBtnText}>Start AI Tracking</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -354,6 +371,21 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={isAIMode} animationType="slide">
+        <AICameraView
+          isActive={isAIMode}
+          pose={aiPose}
+          repState={aiRepState}
+          currentAngle={aiCurrentAngle}
+          formFeedback={aiFormFeedback}
+          exercise={name}
+          onExerciseChange={(newExercise) => {
+            console.log('Exercise changed to:', newExercise);
+          }}
+          onClose={() => setIsAIMode(false)}
+        />
+      </Modal>
     </View>
   );
 };
@@ -672,6 +704,12 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  aiModeActive: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   historySection: {
     padding: 16,
