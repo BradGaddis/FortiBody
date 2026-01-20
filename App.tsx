@@ -1,45 +1,56 @@
-import React from 'react';
-import { SafeAreaView } from 'react-native';
+import 'react-native-gesture-handler';
+import React, { useEffect } from 'react';
+import { SafeAreaView, StatusBar, Platform, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { GeneralExercises } from './Exercise/GeneralExercises';
-import { total_exercises_dict } from './Exercise/exercise_store';
-import { Exercise } from './Exercise/Exercise';
-import  Home  from './Home';
-import Fasting from './Fasting';
-import { ExerciseSettings } from './Exercise/Settings';
+import { AppNavigator } from './src/navigation/navigators';
+import { deepLinkingConfig } from './src/navigation/config';
+import { useFortiBodyTheme, ThemeProvider } from './src/theme/ThemeProvider';
+import { logger, LOG } from './src/utils/logger';
+import { DebugOverlay } from './src/components/debug/DebugOverlay';
 
-const Stack = createStackNavigator();
-// options={{"headerShown": false}
-export default function App() {
+const AppContent: React.FC = () => {
+  const theme = useFortiBodyTheme();
+
+  useEffect(() => {
+    LOG.APP.START();
+    LOG.NAVIGATION.NAVIGATE('Main');
+    return () => {
+      LOG.APP.UNMOUNT();
+    };
+  }, []);
+
   return (
-    <SafeAreaView style={{ 
-      flex: 1,
-      height: '100%',
-      alignContent: 'center',
-      
-    }}>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName='Exercise List'>
-          {/*populate each exercise screen */}
-          <Stack.Screen name="Exercise List" component={Home}/>
-          { generateExerciseScreens()}
-          <Stack.Screen name="General Exercises" component={GeneralExercises} />
-          {/* <Stack.Screen name="Powerlifting Exercises" component={PowerLiftingExercises} /> */}
-          {/* <Stack.Screen name="Diet" component={Diet} /> */}
-          <Stack.Screen name="Fasting" component={Fasting} /> 
-          <Stack.Screen name="Exercise Settings" component={ExerciseSettings} />
-        </Stack.Navigator>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.background.light.primary,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+      }}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.background.light.primary}
+      />
+      <NavigationContainer linking={deepLinkingConfig}>
+        <AppNavigator />
       </NavigationContainer>
+      <DebugOverlay />
     </SafeAreaView>
   );
-}
+};
 
-export const generateExerciseScreens = () => {
-  return total_exercises_dict.map((exercise : any) => (
-    <Stack.Screen key={exercise.id} name={exercise.name}>
-      {(props) => <Exercise name={exercise.name} navigation={props.navigation}/>}
-    </Stack.Screen>
-  ))
+export default function App() {
+  logger.configure({
+    enabled: __DEV__,
+    minLevel: 'debug',
+    maxLogs: 100,
+  });
 
+  LOG.APP.MOUNT();
+
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }
