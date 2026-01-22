@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,6 +27,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [streakData, setStreakData] = useState({ current: 0, longest: 0 });
   const [userName, setUserName] = useState('FortiBody User');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -42,6 +44,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       setStats(userStats);
       setStreakData({ current: streak.currentStreak, longest: streak.longestStreak });
       setUserName(profile?.name || 'FortiBody User');
+      setWeightUnit(profile?.weightUnit || 'kg');
     } catch (error) {
       console.error('Failed to load profile data:', error);
     } finally {
@@ -61,6 +64,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     loadData();
   }, [loadData]);
 
+  const toggleWeightUnit = async () => {
+    const newUnit = weightUnit === 'kg' ? 'lbs' : 'kg';
+    try {
+      const profileService = new UserProfileService();
+      const profile = await profileService.getActiveProfile();
+      
+      await profileService.saveProfile({
+        ...profile,
+        weightUnit: newUnit,
+        updatedAt: new Date(),
+      });
+      
+      setWeightUnit(newUnit);
+      Alert.alert('Success', `Weight unit changed to ${newUnit.toUpperCase()}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update weight unit');
+    }
+  };
+
   const menuItems = [
     { label: 'Edit Profile', icon: 'person-outline', screen: 'ProfileSetup' },
     { label: 'My Goals', icon: 'flag-outline', screen: 'ProfileGoals' },
@@ -68,6 +90,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       label: 'Measurements',
       icon: 'resize-outline',
       screen: 'ProfileMeasurements',
+    },
+    {
+      label: `Weight Unit: ${weightUnit.toUpperCase()}`,
+      icon: 'scale-outline',
+      action: 'toggleUnit',
     },
     { label: 'Achievements', icon: 'medal-outline', screen: undefined },
     { label: 'Settings', icon: 'settings-outline', screen: undefined },
@@ -147,7 +174,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           <TouchableOpacity
             key={index}
             style={styles.menuItem}
-            onPress={() => item.screen && navigation?.navigate?.(item.screen)}
+            onPress={() => {
+              if (item.action === 'toggleUnit') {
+                toggleWeightUnit();
+              } else if (item.screen) {
+                navigation?.navigate?.(item.screen);
+              }
+            }}
           >
             <View style={styles.menuItemLeft}>
               <Ionicons name={item.icon as any} size={22} color="#666" />
@@ -160,7 +193,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 {item.label}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
+            {item.action === 'toggleUnit' ? (
+              <Ionicons name="swap-horizontal" size={20} color="#999" />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            )}
           </TouchableOpacity>
         ))}
       </View>
