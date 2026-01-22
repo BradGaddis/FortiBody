@@ -28,12 +28,17 @@ export type MainTabParamList = {
   HomeStack: NavigatorScreenParams<HomeStackParamList>;
   ExercisesStack: NavigatorScreenParams<ExercisesStackParamList>;
   NutritionStack: NavigatorScreenParams<NutritionStackParamList>;
+  SleepStack: NavigatorScreenParams<SleepStackParamList>;
   ProfileStack: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 export type HomeStackParamList = {
   Home: undefined;
   EnhancedHome: undefined;
+};
+
+export type SleepStackParamList = {
+  Sleep: undefined;
 };
 
 export type ExercisesStackParamList = {
@@ -76,11 +81,15 @@ export const ROUTES = {
     HomeStack: 'HomeStack' as const,
     ExercisesStack: 'ExercisesStack' as const,
     NutritionStack: 'NutritionStack' as const,
+    SleepStack: 'SleepStack' as const,
     ProfileStack: 'ProfileStack' as const,
   },
   Home: {
     Home: 'Home' as const,
     EnhancedHome: 'Enhanced Home' as const,
+  },
+  Sleep: {
+    Sleep: 'Sleep' as const,
   },
   Exercises: {
     ExerciseList: 'Exercise List' as const,

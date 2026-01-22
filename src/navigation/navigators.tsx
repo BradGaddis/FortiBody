@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList, MainTabParamList, HomeStackParamList, ExercisesStackParamList, NutritionStackParamList } from './routes';
+import { RootStackParamList, MainTabParamList, HomeStackParamList, ExercisesStackParamList, NutritionStackParamList, SleepStackParamList } from './routes';
 import { screenOptions } from './config';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import EnhancedHomeScreen from '../screens/home/EnhancedHome';
@@ -19,6 +19,7 @@ import { BarcodeScannerScreen } from '../screens/nutrition/BarcodeScannerScreen'
 import { CreateFoodScreen } from '../screens/nutrition/CreateFoodScreen';
 import { EditFoodScreen } from '../screens/nutrition/EditFoodScreen';
 import { EditFoodEntryScreen } from '../screens/nutrition/EditFoodEntryScreen';
+import SleepScreen from '../screens/sleep/SleepScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import ProfileSetupScreen from '../screens/profile/ProfileSetupScreen';
 import { isOnboardingComplete, getOnboardingData } from '../utils/onboarding';
@@ -30,6 +31,7 @@ const MainTab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createStackNavigator<HomeStackParamList>();
 const ExercisesStack = createStackNavigator<ExercisesStackParamList>();
 const NutritionStack = createStackNavigator<NutritionStackParamList>();
+const SleepStack = createStackNavigator<SleepStackParamList>();
 
 const HomeStackNavigator: React.FC = () => (
   <HomeStack.Navigator screenOptions={screenOptions} initialRouteName="EnhancedHome">
@@ -64,6 +66,12 @@ const NutritionStackNavigator: React.FC = () => (
   </NutritionStack.Navigator>
 );
 
+const SleepStackNavigator: React.FC = () => (
+  <SleepStack.Navigator screenOptions={screenOptions} initialRouteName="Sleep">
+    <SleepStack.Screen name="Sleep" component={SleepScreen} options={{ headerShown: false }} />
+  </SleepStack.Navigator>
+);
+
 const ProfileStackNavigator: React.FC = () => (
   <Stack.Navigator screenOptions={screenOptions} initialRouteName="Profile">
     <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
@@ -80,6 +88,7 @@ const MainTabNavigator: React.FC = () => (
           case 'HomeStack': iconName = focused ? 'home' : 'home-outline'; break;
           case 'ExercisesStack': iconName = focused ? 'fitness' : 'fitness-outline'; break;
           case 'NutritionStack': iconName = focused ? 'restaurant' : 'restaurant-outline'; break;
+          case 'SleepStack': iconName = focused ? 'moon' : 'moon-outline'; break;
         }
         return <Ionicons name={iconName} size={size} color={color} />;
       },
@@ -93,6 +102,7 @@ const MainTabNavigator: React.FC = () => (
     <MainTab.Screen name="HomeStack" component={HomeStackNavigator} options={{ title: 'Home', headerShown: false }} />
     <MainTab.Screen name="ExercisesStack" component={ExercisesStackNavigator} options={{ title: 'Exercises', headerShown: false }} />
     <MainTab.Screen name="NutritionStack" component={NutritionStackNavigator} options={{ title: 'Nutrition', headerShown: false }} />
+    <MainTab.Screen name="SleepStack" component={SleepStackNavigator} options={{ title: 'Sleep', headerShown: false }} />
     <MainTab.Screen name="ProfileStack" component={ProfileStackNavigator} options={{ title: 'Profile', headerShown: false }} />
   </MainTab.Navigator>
 );
@@ -217,4 +227,4 @@ export const AppNavigator: React.FC = () => {
   );
 };
 
-export { MainTabNavigator, HomeStackNavigator, ExercisesStackNavigator, NutritionStackNavigator };
+export { MainTabNavigator, HomeStackNavigator, ExercisesStackNavigator, NutritionStackNavigator, SleepStackNavigator };
