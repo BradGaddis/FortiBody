@@ -183,22 +183,9 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   };
 
   const deleteFromHistory = async (sessionId: string) => {
-    Alert.alert(
-      'Delete Session',
-      'Are you sure you want to delete this session?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const newHistory = history.filter(s => s.id !== sessionId);
-            setHistory(newHistory);
-            await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
-          },
-        },
-      ]
-    );
+    const newHistory = history.filter(s => s.id !== sessionId);
+    setHistory(newHistory);
+    await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
   };
 
   const cancelEditingSession = () => {
