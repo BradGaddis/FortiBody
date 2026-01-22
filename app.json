@@ -18,26 +18,28 @@
       "src/assets/**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "FortiBody needs camera access to scan barcodes for nutrition tracking."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.bgadd.fortibody"
-    },
-    "web": {
-      "favicon": "./src/assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "1cce3f78-1a9a-43b3-b3ed-0d8ac84dac42"
-      }
+      "package": "com.bgadd.fortibody",
+      "permissions": ["android.permission.CAMERA"]
     },
     "plugins": [
-      "expo-font",
-      "expo-barcode-scanner"
-    ]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow FortiBody to access your camera for barcode scanning."
+        }
+      ],
+      "expo-font"
+    ],
+    "newArchEnabled": true
   }
 }
