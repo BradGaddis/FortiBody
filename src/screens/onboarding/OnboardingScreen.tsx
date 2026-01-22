@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/routes';
 import { Ionicons } from '@expo/vector-icons';
 import {
   OnboardingStep,
@@ -18,15 +20,12 @@ import {
   completeOnboardingStep,
   getOnboardingData,
   updateOnboardingData,
-  skipOnboarding,
   OnboardingSteps,
-  onboardingStepTitles,
-  onboardingStepDescriptions,
   GOAL_OPTIONS,
   FITNESS_LEVELS,
 } from '../../utils/onboarding';
-import { useFortiBodyTheme } from '../../theme/ThemeProvider';
-import { Button, Card, ThemedText } from '../../theme/components';
+import { isOnboardingComplete, setOnboardingComplete } from '../../utils/onboarding';
+import { ProfileForm } from '../../components/profile/ProfileForm';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -37,784 +36,401 @@ interface OnboardingScreenProps {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   onComplete,
 }) => {
-  const navigation = useNavigation();
-  const theme = useFortiBodyTheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(
-    null
-  );
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('🧪 OnboardingScreen rendering, step:', currentStep);
+
   useEffect(() => {
+    console.log('🧪 OnboardingScreen useEffect running');
     loadOnboardingState();
   }, []);
 
   const loadOnboardingState = async () => {
     try {
+      console.log('🧪 Loading onboarding state...');
       const step = await getOnboardingStep();
       const data = await getOnboardingData();
+      console.log('🧪 Loaded step:', step, 'data:', data);
       setCurrentStep(step);
       setOnboardingData(data);
     } catch (error) {
-      console.error('Failed to load onboarding state:', error);
+      console.error('🧪 Failed to load onboarding state:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleNext = async () => {
+    console.log('🧪 handleNext called, current step:', currentStep);
     try {
-      const nextStep = await completeOnboardingStep(currentStep);
-      setCurrentStep(nextStep);
-
-      if (nextStep === 'complete') {
-        onComplete?.();
-        if (navigation.canGoBack()) {
-          navigation.goBack();
+      if (currentStep === 'welcome') {
+        await setOnboardingStep('goals');
+        setCurrentStep('goals');
+        return;
+      }
+      
+      if (currentStep === 'goals') {
+        if (!onboardingData?.goals.length) {
+          alert('Please select at least one goal');
+          return;
         }
+        await updateOnboardingData(onboardingData!);
+        await setOnboardingStep('profile');
+        setCurrentStep('profile');
+        return;
+      }
+      
+      if (currentStep === 'profile') {
+        return;
+      }
+      
+      if (currentStep === 'notifications') {
+        await updateOnboardingData(onboardingData!);
+        await setOnboardingStep('privacy');
+        setCurrentStep('privacy');
+        return;
+      }
+      
+      if (currentStep === 'privacy') {
+        console.log('🧪 Completing onboarding...');
+        await updateOnboardingData(onboardingData!);
+        await setOnboardingComplete();
+        console.log('🧪 Onboarding saved to AsyncStorage');
+        await onComplete?.();
+        console.log('🧪 onComplete callback done');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+        return;
       }
     } catch (error) {
-      console.error('Failed to advance onboarding:', error);
+      console.error('🧪 Failed to advance onboarding:', error);
     }
   };
 
-  const handleSkip = async () => {
+  const handleBack = async () => {
     try {
-      await skipOnboarding();
-      onComplete?.();
-      if (navigation.canGoBack()) {
+      const currentIndex = OnboardingSteps.indexOf(currentStep);
+      if (currentIndex > 0) {
+        const prevStep = OnboardingSteps[currentIndex - 1];
+        await setOnboardingStep(prevStep);
+        setCurrentStep(prevStep);
+      } else {
         navigation.goBack();
       }
     } catch (error) {
-      console.error('Failed to skip onboarding:', error);
+      console.error('Failed to go back:', error);
     }
   };
 
-  const updateData = async (updates: Partial<OnboardingData>) => {
-    try {
-      const newData = { ...onboardingData, ...updates } as OnboardingData;
-      setOnboardingData(newData);
-      await updateOnboardingData(updates);
-    } catch (error) {
-      console.error('Failed to update onboarding data:', error);
+  const handleProfileComplete = async (name: string, age: number, goals: string[]) => {
+    console.log('🧪 handleProfileComplete called, name:', name, 'age:', age, 'goals:', goals);
+    
+    if (!name.trim()) {
+      alert('Please enter your name');
+      return;
     }
+    
+    const skippedOnboarding = goals.length === 0;
+    
+    if (skippedOnboarding) {
+      console.log('🧪 Completing onboarding from skipped flow...');
+      await updateOnboardingData({ name: name.trim(), age });
+      await setOnboardingComplete();
+      await onComplete?.();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+      return;
+    }
+    
+    await updateOnboardingData({ name: name.trim(), age });
+    await setOnboardingStep('notifications');
+    setCurrentStep('notifications');
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 'welcome':
-        return <WelcomeStep onNext={handleNext} onSkip={handleSkip} />;
-      case 'goals':
-        return (
-          <GoalsStep
-            data={onboardingData}
-            onUpdate={updateData}
-            onNext={handleNext}
-          />
-        );
-      case 'profile':
-        return (
-          <ProfileStep
-            data={onboardingData}
-            onUpdate={updateData}
-            onNext={handleNext}
-          />
-        );
-      case 'notifications':
-        return (
-          <NotificationsStep
-            data={onboardingData}
-            onUpdate={updateData}
-            onNext={handleNext}
-          />
-        );
-      case 'privacy':
-        return (
-          <PrivacyStep
-            data={onboardingData}
-            onUpdate={updateData}
-            onNext={handleNext}
-          />
-        );
-      default:
-        return null;
-    }
+  const toggleGoal = (goalId: string) => {
+    const currentGoals = onboardingData?.goals || [];
+    const newGoals = currentGoals.includes(goalId)
+      ? currentGoals.filter(g => g !== goalId)
+      : [...currentGoals, goalId];
+    setOnboardingData(prev => prev ? { ...prev, goals: newGoals } : null);
   };
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={[
-          styles.container,
-          { backgroundColor: theme.colors.background.light.primary },
-        ]}
-      >
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ThemedText variant="h4">Loading...</ThemedText>
+          <Text>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const currentIndex = OnboardingSteps.indexOf(currentStep);
-  const progress = currentIndex / (OnboardingSteps.length - 1);
-
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.background.light.primary },
-      ]}
-    >
-      <View style={styles.header}>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
-        </View>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-          <ThemedText variant="caption" color="secondary">
-            Skip
-          </ThemedText>
+    <SafeAreaView style={styles.container}>
+      {currentStep !== 'welcome' && (
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-      </View>
+      )}
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.stepContainer}>{renderStep()}</View>
-      </ScrollView>
-
-      {currentStep !== 'welcome' && currentStep !== 'complete' && (
-        <View style={styles.footer}>
-          <View style={styles.stepIndicator}>
-            {OnboardingSteps.slice(0, -1).map((step, index) => (
-              <View
-                key={step}
-                style={[
-                  styles.stepDot,
-                  {
-                    backgroundColor:
-                      index === currentIndex
-                        ? theme.colors.primary[500]
-                        : index < currentIndex
-                          ? theme.colors.primary[300]
-                          : theme.colors.neutral[300],
-                  },
-                ]}
-              />
-            ))}
-          </View>
+      <ScrollView style={styles.scrollContainer}>
+      {currentStep === 'welcome' && (
+        <View style={styles.stepContainer}>
+          <Text style={styles.title}>Welcome to FortiBody</Text>
+          <Text style={styles.subtitle}>Your personal fitness companion</Text>
+          <TouchableOpacity style={styles.button} onPress={handleNext}>
+            <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.skipButton} 
+            onPress={async () => {
+              // Skip to profile setup
+              await setOnboardingStep('profile');
+              setCurrentStep('profile');
+            }}
+          >
+            <Text style={styles.skipButtonText}>Skip for now (go to profile)</Text>
+          </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
-  );
-};
 
-interface StepProps {
-  onNext: () => void;
-  onSkip?: () => void;
-}
-
-const WelcomeStep: React.FC<StepProps> = ({ onNext, onSkip }) => {
-  const theme = useFortiBodyTheme();
-
-  return (
-    <View style={styles.welcomeStep}>
-      <View style={styles.logoContainer}>
-        <View
-          style={[styles.logo, { backgroundColor: theme.colors.primary[500] }]}
-        >
-          <Ionicons name="fitness" size={48} color="#FFFFFF" />
-        </View>
-      </View>
-
-      <ThemedText variant="h2" style={styles.welcomeTitle}>
-        Welcome to FortiBody
-      </ThemedText>
-
-      <ThemedText
-        variant="body"
-        color="secondary"
-        style={styles.welcomeSubtitle}
-      >
-        Your personal fitness journey starts here. Let's set up your profile to
-        get the most out of the app.
-      </ThemedText>
-
-      <View style={styles.welcomeFeatures}>
-        <FeatureItem icon="barbell" text="Track your workouts" />
-        <FeatureItem icon="restaurant" text="Monitor nutrition" />
-        <FeatureItem icon="trophy" text="Achieve your goals" />
-      </View>
-
-      <View style={styles.welcomeActions}>
-        <Button title="Get Started" onPress={onNext} size="lg" fullWidth />
-        {onSkip && (
-          <TouchableOpacity onPress={onSkip} style={styles.skipLink}>
-            <ThemedText variant="body" color="secondary">
-              Skip for now
-            </ThemedText>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-};
-
-const FeatureItem: React.FC<{ icon: string; text: string }> = ({
-  icon,
-  text,
-}) => {
-  const theme = useFortiBodyTheme();
-
-  return (
-    <View style={styles.featureItem}>
-      <View
-        style={[
-          styles.featureIcon,
-          { backgroundColor: theme.colors.primary[100] },
-        ]}
-      >
-        <Ionicons
-          name={icon as any}
-          size={20}
-          color={theme.colors.primary[500]}
-        />
-      </View>
-      <ThemedText variant="body">{text}</ThemedText>
-    </View>
-  );
-};
-
-interface GoalsStepProps extends StepProps {
-  data: OnboardingData | null;
-  onUpdate: (updates: Partial<OnboardingData>) => void;
-}
-
-const GoalsStep: React.FC<GoalsStepProps> = ({ data, onUpdate, onNext }) => {
-  const theme = useFortiBodyTheme();
-  const selectedGoals = data?.goals || [];
-
-  const toggleGoal = (goalId: string) => {
-    const newGoals = selectedGoals.includes(goalId)
-      ? selectedGoals.filter(id => id !== goalId)
-      : [...selectedGoals, goalId];
-    onUpdate({ goals: newGoals });
-  };
-
-  const handleNext = () => {
-    if (selectedGoals.length > 0) {
-      onNext();
-    }
-  };
-
-  return (
-    <View style={styles.stepContent}>
-      <ThemedText variant="h4" style={styles.stepTitle}>
-        What are your goals?
-      </ThemedText>
-      <ThemedText variant="body" color="secondary" style={styles.stepSubtitle}>
-        Select all that apply
-      </ThemedText>
-
-      <View style={styles.goalsGrid}>
-        {GOAL_OPTIONS.map(goal => (
-          <TouchableOpacity
-            key={goal.id}
-            style={[
-              styles.goalCard,
-              {
-                backgroundColor: selectedGoals.includes(goal.id)
-                  ? theme.colors.primary[500]
-                  : theme.colors.neutral[0],
-                borderColor: selectedGoals.includes(goal.id)
-                  ? theme.colors.primary[500]
-                  : theme.colors.neutral[300],
-              },
-            ]}
-            onPress={() => toggleGoal(goal.id)}
-          >
-            <Ionicons
-              name={goal.icon as any}
-              size={28}
-              color={
-                selectedGoals.includes(goal.id)
-                  ? '#FFFFFF'
-                  : theme.colors.neutral[600]
-              }
-            />
-            <ThemedText
-              variant="bodySmall"
-              style={[
-                styles.goalText,
-                {
-                  color: selectedGoals.includes(goal.id)
-                    ? '#FFFFFF'
-                    : theme.colors.text.primary,
-                },
-              ]}
-            >
-              {goal.title}
-            </ThemedText>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Button
-        title="Continue"
-        onPress={handleNext}
-        disabled={selectedGoals.length === 0}
-        fullWidth
-      />
-    </View>
-  );
-};
-
-interface ProfileStepProps extends StepProps {
-  data: OnboardingData | null;
-  onUpdate: (updates: Partial<OnboardingData>) => void;
-}
-
-const ProfileStep: React.FC<ProfileStepProps> = ({
-  data,
-  onUpdate,
-  onNext,
-}) => {
-  const theme = useFortiBodyTheme();
-
-  return (
-    <View style={styles.stepContent}>
-      <ThemedText variant="h4" style={styles.stepTitle}>
-        About You
-      </ThemedText>
-      <ThemedText variant="body" color="secondary" style={styles.stepSubtitle}>
-        Help us personalize your experience
-      </ThemedText>
-
-      <ThemedText
-        variant="bodySmall"
-        color="secondary"
-        style={styles.sectionLabel}
-      >
-        Your Name
-      </ThemedText>
-      <View
-        style={[
-          styles.inputContainer,
-          { borderColor: theme.colors.neutral[300] },
-        ]}
-      >
-        <TextInput
-          style={styles.textInput}
-          value={data?.name || ''}
-          onChangeText={name => onUpdate({ name })}
-          placeholder="Enter your name"
-        />
-      </View>
-
-      <ThemedText
-        variant="bodySmall"
-        color="secondary"
-        style={styles.sectionLabel}
-      >
-        Fitness Level
-      </ThemedText>
-      <View style={styles.levelButtons}>
-        {FITNESS_LEVELS.map(level => (
-          <TouchableOpacity
-            key={level.id}
-            style={[
-              styles.levelButton,
-              {
-                backgroundColor:
-                  data?.fitnessLevel === level.id
-                    ? theme.colors.primary[500]
-                    : theme.colors.neutral[0],
-                borderColor:
-                  data?.fitnessLevel === level.id
-                    ? theme.colors.primary[500]
-                    : theme.colors.neutral[300],
-              },
-            ]}
-            onPress={() => onUpdate({ fitnessLevel: level.id as any })}
-          >
-            <ThemedText
-              variant="bodySmall"
-              style={{
-                color:
-                  data?.fitnessLevel === level.id
-                    ? '#FFFFFF'
-                    : theme.colors.text.primary,
-                fontWeight: '600',
-              }}
-            >
-              {level.title}
-            </ThemedText>
-            <ThemedText
-              variant="caption"
-              style={{
-                color:
-                  data?.fitnessLevel === level.id
-                    ? 'rgba(255,255,255,0.8)'
-                    : theme.colors.text.secondary,
-              }}
-            >
-              {level.description}
-            </ThemedText>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Button
-        title="Continue"
-        onPress={onNext}
-        disabled={!data?.name}
-        fullWidth
-      />
-    </View>
-  );
-};
-
-interface NotificationsStepProps extends StepProps {
-  data: OnboardingData | null;
-  onUpdate: (updates: Partial<OnboardingData>) => void;
-}
-
-const NotificationsStep: React.FC<NotificationsStepProps> = ({
-  data,
-  onUpdate,
-  onNext,
-}) => {
-  const theme = useFortiBodyTheme();
-
-  return (
-    <View style={styles.stepContent}>
-      <ThemedText variant="h4" style={styles.stepTitle}>
-        Stay Connected
-      </ThemedText>
-      <ThemedText variant="body" color="secondary" style={styles.stepSubtitle}>
-        Enable notifications to stay on track
-      </ThemedText>
-
-      <Card style={styles.notificationCard}>
-        <View style={styles.notificationRow}>
-          <View style={styles.notificationInfo}>
-            <ThemedText variant="body">Push Notifications</ThemedText>
-            <ThemedText variant="caption" color="secondary">
-              Receive updates and reminders
-            </ThemedText>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.toggle,
-              {
-                backgroundColor: data?.notificationsEnabled
-                  ? theme.colors.primary[500]
-                  : theme.colors.neutral[300],
-              },
-            ]}
-            onPress={() =>
-              onUpdate({ notificationsEnabled: !data?.notificationsEnabled })
-            }
-          >
-            <View
-              style={[
-                styles.toggleKnob,
-                {
-                  transform: [
-                    { translateX: data?.notificationsEnabled ? 20 : 0 },
-                  ],
-                },
-              ]}
-            />
-          </TouchableOpacity>
-        </View>
-      </Card>
-
-      <Button title="Continue" onPress={onNext} fullWidth />
-    </View>
-  );
-};
-
-interface PrivacyStepProps extends StepProps {
-  data: OnboardingData | null;
-  onUpdate: (updates: Partial<OnboardingData>) => void;
-}
-
-const PrivacyStep: React.FC<PrivacyStepProps> = ({
-  data,
-  onUpdate,
-  onNext,
-}) => {
-  const theme = useFortiBodyTheme();
-
-  return (
-    <View style={styles.stepContent}>
-      <ThemedText variant="h4" style={styles.stepTitle}>
-        Your Privacy
-      </ThemedText>
-      <ThemedText variant="body" color="secondary" style={styles.stepSubtitle}>
-        Control your data
-      </ThemedText>
-
-      <Card style={styles.privacyCard}>
-        <View style={styles.privacyRow}>
-          <View style={styles.privacyInfo}>
-            <Ionicons
-              name="analytics-outline"
-              size={24}
-              color={theme.colors.primary[500]}
-            />
-            <View style={styles.privacyText}>
-              <ThemedText variant="body">Help Improve FortiBody</ThemedText>
-              <ThemedText variant="caption" color="secondary">
-                Anonymous usage data
-              </ThemedText>
+        {currentStep === 'goals' && (
+          <View style={styles.stepContainer}>
+            <Text style={styles.title}>What are your goals?</Text>
+            <Text style={styles.subtitle}>Select all that apply</Text>
+            <View style={styles.goalsGrid}>
+              {GOAL_OPTIONS.map(goal => (
+                <TouchableOpacity
+                  key={goal.id}
+                  style={[
+                    styles.goalCard,
+                    {
+                      backgroundColor: onboardingData?.goals.includes(goal.id)
+                        ? '#4CAF50'
+                        : '#f5f5f5',
+                    },
+                  ]}
+                  onPress={() => toggleGoal(goal.id)}
+                >
+                  <Ionicons
+                    name={goal.icon as any}
+                    size={28}
+                    color={onboardingData?.goals.includes(goal.id) ? '#fff' : '#666'}
+                  />
+                  <Text
+                    style={[
+                      styles.goalText,
+                      { color: onboardingData?.goals.includes(goal.id) ? '#fff' : '#333' },
+                    ]}
+                  >
+                    {goal.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+            <TouchableOpacity
+              style={[styles.button, !onboardingData?.goals.length && styles.disabledButton]}
+              onPress={handleNext}
+              disabled={!onboardingData?.goals.length}
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.toggle,
-              {
-                backgroundColor: data?.analyticsEnabled
-                  ? theme.colors.primary[500]
-                  : theme.colors.neutral[300],
-              },
-            ]}
-            onPress={() =>
-              onUpdate({ analyticsEnabled: !data?.analyticsEnabled })
-            }
-          >
-            <View
-              style={[
-                styles.toggleKnob,
-                {
-                  transform: [{ translateX: data?.analyticsEnabled ? 20 : 0 }],
-                },
-              ]}
-            />
-          </TouchableOpacity>
-        </View>
-      </Card>
+        )}
 
-      <ThemedText variant="caption" color="tertiary" style={styles.privacyNote}>
-        Your data is stored locally on your device. We never share your personal
-        information with third parties.
-      </ThemedText>
+        {currentStep === 'profile' && (
+          <ProfileForm
+            isOnboarding={true}
+            initialName={onboardingData?.name || ''}
+            initialAge={onboardingData?.age ? String(onboardingData.age) : ''}
+            onSave={(name, age) => {
+              setOnboardingData(prev => prev ? { ...prev, name, age } : { goals: [], fitnessLevel: 'beginner', primaryGoal: '', name, age, notificationsEnabled: true });
+            }}
+            onComplete={(name, age) => {
+              handleProfileComplete(name, parseInt(age) || 0, onboardingData?.goals || []);
+            }}
+          />
+        )}
 
-      <Button title="Get Started" onPress={onNext} fullWidth />
-    </View>
+        {currentStep === 'notifications' && (
+          <View style={styles.stepContainer}>
+            <Text style={styles.title}>Notifications</Text>
+            <Text style={styles.subtitle}>Stay on track with reminders</Text>
+            
+            <TouchableOpacity
+              style={styles.toggleRow}
+              onPress={() => setOnboardingData(prev => prev ? { ...prev, notificationsEnabled: !prev.notificationsEnabled } : null)}
+            >
+              <Text style={styles.toggleText}>Enable notifications</Text>
+              <View style={[
+                styles.toggle,
+                { backgroundColor: onboardingData?.notificationsEnabled ? '#4CAF50' : '#ccc' }
+              ]}>
+                <View style={[
+                  styles.toggleKnob,
+                  { transform: [{ translateX: onboardingData?.notificationsEnabled ? 20 : 0 }] }
+                ]} />
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {currentStep === 'privacy' && (
+          <View style={styles.stepContainer}>
+            <Text style={styles.title}>Privacy</Text>
+            <Text style={styles.subtitle}>Your data is safe with us</Text>
+            
+            <View style={styles.privacyInfo}>
+              <Ionicons name="shield-checkmark" size={48} color="#4CAF50" />
+              <Text style={styles.privacyText}>
+                We never share your personal data with third parties.
+                All your fitness data stays on your device.
+              </Text>
+            </View>
+            
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Complete Setup</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  progressContainer: {
+  scrollContainer: {
     flex: 1,
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    marginRight: 16,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 2,
-  },
-  skipButton: {
-    padding: 8,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
   },
   stepContainer: {
     flex: 1,
+    padding: 20,
+    paddingTop: 40,
   },
-  footer: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+  backButton: {
+    padding: 20,
   },
-  stepIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  welcomeStep: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  logoContainer: {
-    marginBottom: 24,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  welcomeTitle: {
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
     textAlign: 'center',
-    marginBottom: 12,
   },
-  welcomeSubtitle: {
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 20,
-  },
-  welcomeFeatures: {
-    width: '100%',
-    marginBottom: 40,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  welcomeActions: {
-    width: '100%',
-    gap: 16,
-  },
-  skipLink: {
-    padding: 12,
-    alignItems: 'center',
-  },
-  stepContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  stepTitle: {
-    marginBottom: 8,
-  },
-  stepSubtitle: {
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  textInput: {
+  subtitle: {
     fontSize: 16,
-    color: '#212121',
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  skipButton: {
+    marginTop: 15,
+    padding: 15,
+  },
+  skipButtonText: {
+    color: '#999',
+    fontSize: 16,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   goalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
+    justifyContent: 'center',
+    gap: 15,
   },
   goalCard: {
-    width: (screenWidth - 72) / 2,
-    padding: 16,
+    width: (screenWidth - 70) / 2,
+    padding: 20,
     borderRadius: 12,
-    borderWidth: 2,
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   goalText: {
-    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
   },
-  levelButtons: {
-    gap: 12,
-    marginBottom: 24,
+  fitnessLevels: {
+    gap: 10,
+    marginTop: 10,
   },
-  levelButton: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    gap: 4,
-  },
-  notificationCard: {
-    marginBottom: 24,
-    padding: 16,
-  },
-  notificationRow: {
-    flexDirection: 'row',
+  fitnessCard: {
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  notificationInfo: {
-    flex: 1,
-    marginRight: 16,
+  fitnessText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  toggleText: {
+    fontSize: 18,
   },
   toggle: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
+    width: 50,
+    height: 28,
+    borderRadius: 14,
     padding: 2,
   },
   toggleKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  privacyCard: {
-    marginBottom: 16,
-    padding: 16,
-  },
-  privacyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
   },
   privacyInfo: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 16,
+    padding: 30,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    marginVertical: 20,
   },
   privacyText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  privacyNote: {
-    marginBottom: 24,
+    marginTop: 15,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    color: '#666',
+    fontSize: 14,
   },
 });
-
-import { TextInput } from 'react-native';
 
 export default OnboardingScreen;

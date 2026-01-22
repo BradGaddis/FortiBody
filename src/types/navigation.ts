@@ -31,5 +31,5 @@ export type NavigationPropType<T extends keyof RootStackParamList> = {
   setOptions: (options: any) => void;
   isFocused: () => boolean;
   addListener: (type: string, listener: (event: any) => void) => void;
-  removeListener: (type: string, listener: (event: any) => void);
+  removeListener: (type: string, listener: (event: any) => void) => void;
 };

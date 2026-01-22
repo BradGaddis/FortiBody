@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { useFortiBodyTheme } from '../theme/ThemeProvider';
+import { useFortiBodyTheme } from '../../theme/ThemeProvider';
 
 // Skeleton loader animation constants
 const ANIMATION_DURATION = 1500;
@@ -83,7 +83,7 @@ export const SkeletonAvatar: React.FC<SkeletonAvatarProps> = ({
       width={size}
       height={size}
       borderRadius={size / 2}
-      style={style}
+      {...(style && { style })}
     />
   );
 };
@@ -203,7 +203,7 @@ export const InlineSkeleton: React.FC<InlineSkeletonProps> = ({
       width={width}
       height={height}
       borderRadius={4}
-      style={style}
+      {...(style && { style })}
     />
   );
 };

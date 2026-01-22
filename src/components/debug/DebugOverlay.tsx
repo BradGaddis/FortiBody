@@ -6,9 +6,21 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  Alert,
+  Dimensions,
 } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { logger, LogEntry } from '../../utils/logger';
+import { resetOnboarding } from '../../utils/onboarding';
+import streakService from '../../services/streak/StreakService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export const DebugOverlay: React.FC = () => {
   const [visible, setVisible] = useState(false);
@@ -21,6 +33,12 @@ export const DebugOverlay: React.FC = () => {
     error: 0,
   });
 
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const offsetX = useSharedValue(SCREEN_WIDTH - 76);
+  const offsetY = useSharedValue(SCREEN_HEIGHT - 180);
+  const isDragging = useSharedValue(false);
+
   const updateLogs = useCallback((entry: LogEntry) => {
     setLogs(prevLogs => [entry, ...prevLogs].slice(0, 50));
     setStats(logger.getStats());
@@ -31,23 +49,49 @@ export const DebugOverlay: React.FC = () => {
     return unsubscribe;
   }, [updateLogs]);
 
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      isDragging.value = true;
+      offsetX.value = translateX.value + offsetX.value;
+      offsetY.value = translateY.value + offsetY.value;
+      translateX.value = 0;
+      translateY.value = 0;
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd(() => {
+      isDragging.value = false;
+      offsetX.value = translateX.value + offsetX.value;
+      offsetY.value = translateY.value + offsetY.value;
+      translateX.value = 0;
+      translateY.value = 0;
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: translateX.value + offsetX.value },
+        { translateY: translateY.value + offsetY.value },
+      ],
+      opacity: isDragging.value ? 0.8 : 1,
+    };
+  });
+
   const getLevelColor = (level: string): string => {
     switch (level) {
-      case 'debug':
-        return '#9E9E9E';
-      case 'info':
-        return '#4CAF50';
-      case 'warn':
-        return '#FF9800';
-      case 'error':
-        return '#F44336';
-      default:
-        return '#9E9E9E';
+      case 'debug': return '#9E9E9E';
+      case 'info': return '#4CAF50';
+      case 'warn': return '#FF9800';
+      case 'error': return '#F44336';
+      default: return '#9E9E9E';
     }
   };
 
   const formatTime = (date: Date): string => {
-    return date.toISOString().split('T')[1].slice(0, -1);
+    const parts = date.toISOString().split('T');
+    return parts[1]?.slice(0, -1) || '00:00:00';
   };
 
   const handleClear = (): void => {
@@ -62,23 +106,77 @@ export const DebugOverlay: React.FC = () => {
     console.log('==================');
   };
 
+  const handleResetOnboarding = async (): Promise<void> => {
+    try {
+      console.log('🔄 Starting onboarding reset...');
+      
+      const keysToRemove = [
+        '@user_profile',
+        '@exercise_history',
+        '@workout_streak',
+        '@total_workouts',
+        '@fortibody_onboarding_complete',
+        '@fortibody_onboarding_step',
+        '@fortibody_onboarding_data',
+        '@user_streak',
+        '@streak_increased_today',
+        '@exercise_unit_',
+        '@nutrition_log',
+        '@fasting_start_time',
+      ];
+      
+      // Clear all keys
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key);
+        console.log(`✅ Cleared: ${key}`);
+      }
+      
+      await streakService.resetStreak();
+      
+      console.log('✅ All data cleared successfully!');
+      
+      Alert.alert(
+        'Reset Complete! 🎉',
+        'All user data has been cleared.\n\nPlease force close and restart the app to see onboarding.\n\nDouble-tap back or swipe away to close.',
+        [{ 
+          text: 'Got it!',
+          onPress: () => {
+            console.log('📱 User confirmed reset - close and restart the app');
+          }
+        }]
+      );
+    } catch (error) {
+      console.error('❌ Failed to reset data:', error);
+      Alert.alert(
+        'Reset Failed',
+        'Failed to reset data. Check console for details.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   if (!__DEV__) {
     return null;
   }
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.toggleButton}
-        onPress={() => setVisible(true)}
-      >
-        <Ionicons name="bug-outline" size={24} color="#FFFFFF" />
-        {stats.error > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{stats.error}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.toggleButton, animatedStyle]}>
+          <TouchableOpacity 
+            onPress={() => setVisible(true)}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            style={styles.buttonInner}
+          >
+            <Ionicons name="bug-outline" size={24} color="#FFFFFF" />
+            {stats.error > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{stats.error}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      </GestureDetector>
 
       <Modal visible={visible} animationType="slide">
         <View style={styles.container}>
@@ -116,6 +214,13 @@ export const DebugOverlay: React.FC = () => {
               >
                 <Ionicons name="download-outline" size={20} color="#FFFFFF" />
                 <Text style={styles.actionText}>Export</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: '#FF9800' }]}
+                onPress={handleResetOnboarding}
+              >
+                <Ionicons name="refresh-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionText}>Reset</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: '#F44336' }]}
@@ -166,16 +271,21 @@ export const DebugOverlay: React.FC = () => {
 const styles = StyleSheet.create({
   toggleButton: {
     position: 'absolute',
-    bottom: 100,
-    right: 16,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    zIndex: 1000,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  buttonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   badge: {
     position: 'absolute',
@@ -228,19 +338,21 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    gap: 6,
+    gap: 4,
   },
   actionText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   logContainer: {
@@ -257,19 +369,16 @@ const styles = StyleSheet.create({
   logTime: {
     fontSize: 10,
     width: 80,
-    fontFamily: 'monospace',
   },
   logLevel: {
     fontSize: 10,
     width: 50,
     fontWeight: 'bold',
-    fontFamily: 'monospace',
   },
   logMessage: {
     flex: 1,
     fontSize: 12,
     color: '#E0E0E0',
-    fontFamily: 'monospace',
   },
   emptyState: {
     flex: 1,

@@ -1,7 +1,12 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { MealType } from '../services/nutrition/types';
 
 export type RootStackParamList = {
+  Test: undefined;
+  Loading: undefined;
+  Onboarding: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Profile: undefined;
   Exercise: { name: string; listedKey: string; groupedKey: string };
   ExerciseLibrary: undefined;
   Favorites: undefined;
@@ -12,6 +17,7 @@ export type RootStackParamList = {
   WorkoutSession: undefined;
   Fasting: undefined;
   ProfileEdit: { profile?: any };
+  ProfileSetup: undefined;
   ProfileDashboard: { profileId: string };
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
@@ -34,20 +40,21 @@ export type ExercisesStackParamList = {
   ExerciseList: undefined;
   ExerciseLibrary: undefined;
   Favorites: undefined;
-  GeneralExercises: undefined;
-  PowerLiftingExercises: undefined;
   CreateExercise: undefined;
-  Exercise: { name: string; listedKey: string; groupedKey: string };
+  Exercise: { exercise: any };
   ExerciseSettings: { name: string; listedKey: string; groupedKey: string };
   WorkoutSession: undefined;
+  Flexibility: undefined;
   [key: string]: any;
 };
 
 export type NutritionStackParamList = {
   Nutrition: undefined;
+  FoodDiary: undefined;
   Fasting: undefined;
   Diet: undefined;
-  AddFood: undefined;
+  AddFood: { meal?: MealType };
+  CreateFood: undefined;
   BarcodeScanner: undefined;
 };
 
@@ -55,6 +62,7 @@ export type ProfileStackParamList = {
   Profile: undefined;
   ProfileDashboard: { profileId: string };
   ProfileEdit: { profile?: any };
+  ProfileSetup: undefined;
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
 };
@@ -85,9 +93,11 @@ export const ROUTES = {
   },
   Nutrition: {
     Nutrition: 'Nutrition' as const,
+    FoodDiary: 'Food Diary' as const,
     Fasting: 'Fasting' as const,
     Diet: 'Diet' as const,
     AddFood: 'Add Food' as const,
+    CreateFood: 'Create Food' as const,
     BarcodeScanner: 'Barcode Scanner' as const,
   },
   Profile: {

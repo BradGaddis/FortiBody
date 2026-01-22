@@ -18,7 +18,9 @@ export type AppAction =
   | { type: 'DELETE_EXERCISE'; payload: string }
   | { type: 'SET_PROFILE'; payload: any }
   | { type: 'UPDATE_PROFILE'; payload: any }
-  | { type: 'LOGOUT_USER' };
+  | { type: 'LOGOUT_USER' }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null };
 
 // Define state types
 export interface AppState {

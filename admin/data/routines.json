@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "name": "Yoga Flow",
+    "category": "flexibility",
+    "exercises": ["21", "22"],
+    "description": "A gentle morning yoga routine to start your day"
+  },
+  {
+    "id": "2",
+    "name": "Stretching Routine",
+    "category": "flexibility",
+    "exercises": ["21", "22"],
+    "description": "Full body stretching for recovery"
+  }
+]

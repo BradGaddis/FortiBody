@@ -69,11 +69,12 @@ export const useExerciseSession = (exerciseName: string) => {
 
   const endSession = useCallback(() => {
     setSessionActive(false);
+    const now = new Date();
     const sessionData = {
       id: now.getTime().toString(),
       exerciseName,
       startTime: sessionStart,
-      endTime: new Date(),
+      endTime: now,
       sets: sessionSets,
     };
 

@@ -271,7 +271,7 @@ const ProfileDashboardScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('ProfileEdit' as any)}
+            onPress={() => navigation.navigate('ProfileSetup' as any)}
           >
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>

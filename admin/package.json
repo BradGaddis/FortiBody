@@ -1,0 +1,20 @@
+{
+  "name": "fortibody-admin",
+  "version": "1.0.0",
+  "description": "Admin panel for editing exercises, routines, and modules",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "vue": "^3.3.0",
+    "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}

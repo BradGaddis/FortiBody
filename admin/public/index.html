@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FortiBody Admin</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>FortiBody Admin</h1>
+      <div class="statuses">
+        <div class="status">
+          <span :class="['status-indicator', connected ? 'connected' : 'disconnected']"></span>
+          Server
+        </div>
+        <div class="status">
+          <span :class="['status-indicator', appConnected ? 'connected' : 'disconnected']"></span>
+          App
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab"
+        :class="['tab', { active: currentTab === tab }]"
+        @click="currentTab = tab"
+      >
+        {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+      </button>
+    </nav>
+
+    <main class="content">
+      <div v-if="loading" class="loading">Loading...</div>
+
+      <div v-else-if="currentTab === 'exercises'">
+        <div class="section-header">
+          <h2>Exercises</h2>
+          <button class="btn btn-primary" @click="showAddForm = true">Add Exercise</button>
+        </div>
+
+        <div v-if="appExercises.length > 0" class="app-exercises-section">
+          <h3>App Exercises ({{ appExercises.length }})</h3>
+          <div class="list">
+            <div v-for="item in appExercises" :key="item.id" class="item-card app-exercise-card">
+              <div class="item-header">
+                <h4>{{ item.name }}</h4>
+                <span class="badge">{{ item.category }}</span>
+              </div>
+              <p class="meta">ID: {{ item.id }}</p>
+              <p>{{ item.instructions?.substring(0, 100) }}...</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showAddForm" class="form-panel">
+          <h3>Add Exercise</h3>
+          <form @submit.prevent="addItem('exercises')">
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="formData.name" required>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select v-model="formData.category" required>
+                <option value="strength">Strength</option>
+                <option value="bodyweight">Bodyweight</option>
+                <option value="cardio">Cardio</option>
+                <option value="flexibility">Flexibility</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Equipment</label>
+              <input v-model="formData.equipment">
+            </div>
+            <div class="form-group">
+              <label>Muscle Groups</label>
+              <input v-model="formData.muscleGroups" placeholder="comma-separated">
+            </div>
+            <div class="form-group">
+              <label>Instructions</label>
+              <textarea v-model="formData.instructions" rows="3"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-secondary" @click="showAddForm = false">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="list">
+          <div v-for="item in items.exercises" :key="item.id" class="item-card">
+            <div class="item-header">
+              <h4>{{ item.name }}</h4>
+              <span class="badge">{{ item.category }}</span>
+            </div>
+            <p>{{ item.instructions?.substring(0, 100) }}...</p>
+            <div class="item-actions">
+              <button class="btn btn-small" @click="editItem('exercises', item)">Edit</button>
+              <button class="btn btn-small btn-danger" @click="deleteItem('exercises', item.id)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentTab === 'routines'">
+        <div class="section-header">
+          <h2>Routines</h2>
+          <button class="btn btn-primary" @click="showAddForm = true">Add Routine</button>
+        </div>
+
+        <div v-if="showAddForm" class="form-panel">
+          <h3>Add Routine</h3>
+          <form @submit.prevent="addItem('routines')">
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="formData.name" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea v-model="formData.description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select v-model="formData.category">
+                <option value="flexibility">Flexibility</option>
+                <option value="strength">Strength</option>
+                <option value="cardio">Cardio</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Exercise IDs</label>
+              <input v-model="formData.exercises" placeholder="comma-separated IDs">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-secondary" @click="showAddForm = false">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="list">
+          <div v-for="item in items.routines" :key="item.id" class="item-card">
+            <div class="item-header">
+              <h4>{{ item.name }}</h4>
+              <span class="badge">{{ item.category }}</span>
+            </div>
+            <p>{{ item.description }}</p>
+            <p class="meta">Exercises: {{ item.exercises?.join(', ') }}</p>
+            <div class="item-actions">
+              <button class="btn btn-small" @click="editItem('routines', item)">Edit</button>
+              <button class="btn btn-small" @click="exportItem('routines', item)">Export</button>
+              <button class="btn btn-small btn-danger" @click="deleteItem('routines', item.id)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentTab === 'modules'">
+        <div class="section-header">
+          <h2>Modules</h2>
+          <button class="btn btn-primary" @click="showAddForm = true">Add Module</button>
+        </div>
+
+        <div v-if="showAddForm" class="form-panel">
+          <h3>Add Module</h3>
+          <form @submit.prevent="addItem('modules')">
+            <div class="form-group">
+              <label>Name</label>
+              <input v-model="formData.name" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea v-model="formData.description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Routine IDs</label>
+              <input v-model="formData.routines" placeholder="comma-separated IDs">
+            </div>
+            <div class="form-group">
+              <label>Exercise IDs</label>
+              <input v-model="formData.exercises" placeholder="comma-separated IDs">
+            </div>
+            <div class="form-group">
+              <label>Tags</label>
+              <input v-model="formData.tags" placeholder="comma-separated">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn btn-secondary" @click="showAddForm = false">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="list">
+          <div v-for="item in items.modules" :key="item.id" class="item-card">
+            <div class="item-header">
+              <h4>{{ item.name }}</h4>
+            </div>
+            <p>{{ item.description }}</p>
+            <p class="meta">Routines: {{ item.routines?.join(', ') }}</p>
+            <p class="meta">Exercises: {{ item.exercises?.join(', ') }}</p>
+            <p class="meta">Tags: {{ item.tags?.join(', ') }}</p>
+            <div class="item-actions">
+              <button class="btn btn-small" @click="editItem('modules', item)">Edit</button>
+              <button class="btn btn-small" @click="exportItem('modules', item)">Export</button>
+              <button class="btn btn-small btn-danger" @click="deleteItem('modules', item.id)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div v-if="editingItem" class="modal-overlay" @click.self="editingItem = null">
+      <div class="modal">
+        <h3>Edit {{ currentTab.slice(0, -1) }}</h3>
+        <form @submit.prevent="saveEdit">
+          <div class="form-group">
+            <label>Name</label>
+            <input v-model="editingItem.name" required>
+          </div>
+          <div class="form-group" v-if="currentTab === 'routines' || currentTab === 'modules'">
+            <label>Description</label>
+            <textarea v-model="editingItem.description" rows="2"></textarea>
+          </div>
+          <div class="form-group" v-if="currentTab === 'exercises'">
+            <label>Category</label>
+            <select v-model="editingItem.category">
+              <option value="strength">Strength</option>
+              <option value="bodyweight">Bodyweight</option>
+              <option value="cardio">Cardio</option>
+              <option value="flexibility">Flexibility</option>
+            </select>
+          </div>
+          <div class="form-group" v-if="currentTab === 'exercises'">
+            <label>Equipment</label>
+            <input v-model="editingItem.equipment">
+          </div>
+          <div class="form-group" v-if="currentTab === 'exercises'">
+            <label>Muscle Groups</label>
+            <input v-model="editingItem.muscleGroups">
+          </div>
+          <div class="form-group" v-if="currentTab === 'exercises'">
+            <label>Instructions</label>
+            <textarea v-model="editingItem.instructions" rows="3"></textarea>
+          </div>
+          <div class="form-group" v-if="currentTab === 'routines' || currentTab === 'modules'">
+            <label>Exercise IDs</label>
+            <input v-model="editingItem.exercises">
+          </div>
+          <div class="form-group" v-if="currentTab === 'modules'">
+            <label>Routine IDs</label>
+            <input v-model="editingItem.routines">
+          </div>
+          <div class="form-group" v-if="currentTab === 'modules'">
+            <label>Tags</label>
+            <input v-model="editingItem.tags">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @click="editingItem = null">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

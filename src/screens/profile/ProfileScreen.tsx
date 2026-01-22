@@ -8,11 +8,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useFortiBodyTheme } from '../../theme/ThemeProvider';
 import {
   userStatsService,
   UserStats,
 } from '../../services/user/UserStatsService';
+import UserProfileService from '../../services/user/UserProfileService';
+import streakService from '../../services/streak/StreakService';
 
 interface ProfileScreenProps {
   navigation?: any;
@@ -21,20 +24,45 @@ interface ProfileScreenProps {
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const theme = useFortiBodyTheme();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [streakData, setStreakData] = useState({ current: 0, longest: 0 });
+  const [userName, setUserName] = useState('FortiBody User');
   const [loading, setLoading] = useState(true);
 
-  const loadStats = useCallback(async () => {
-    const userStats = await userStatsService.getStats();
-    setStats(userStats);
-    setLoading(false);
+  const loadData = useCallback(async () => {
+    try {
+      const profileService = new UserProfileService();
+      const [userStats, profile, streak] = await Promise.all([
+        userStatsService.getStats(),
+        profileService.getActiveProfile(),
+        streakService.getStreak(),
+      ]);
+      console.log('📱 ProfileScreen - Raw profile from service:', JSON.stringify(profile));
+      console.log('📱 ProfileScreen - Profile name:', profile?.name);
+      console.log('📱 ProfileScreen - Streak:', streak.currentStreak);
+      setStats(userStats);
+      setStreakData({ current: streak.currentStreak, longest: streak.longestStreak });
+      setUserName(profile?.name || 'FortiBody User');
+    } catch (error) {
+      console.error('Failed to load profile data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 ProfileScreen - focus, reloading data');
+      setLoading(true);
+      loadData();
+    }, [loadData])
+  );
+
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    loadData();
+  }, [loadData]);
 
   const menuItems = [
-    { label: 'Edit Profile', icon: 'person-outline', screen: 'ProfileEdit' },
+    { label: 'Edit Profile', icon: 'person-outline', screen: 'ProfileSetup' },
     { label: 'My Goals', icon: 'flag-outline', screen: 'ProfileGoals' },
     {
       label: 'Measurements',
@@ -43,7 +71,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     },
     { label: 'Achievements', icon: 'medal-outline', screen: undefined },
     { label: 'Settings', icon: 'settings-outline', screen: undefined },
-    { label: 'Help & Support', icon: 'help-circle-outline', screen: undefined },
   ];
 
   if (loading || !stats) {
@@ -68,7 +95,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       value: stats.totalWorkouts.toString(),
       icon: 'fitness',
     },
-    { label: 'Streak', value: `${stats.currentStreak} days`, icon: 'flame' },
+    { label: 'Streak', value: `${streakData.current} days`, icon: 'flame' },
     {
       label: 'Total Exercises',
       value: stats.totalExercises.toString(),
@@ -84,11 +111,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>FB</Text>
-        </View>
         <Text style={[styles.name, { color: theme.colors.text.primary }]}>
-          FortiBody User
+          {userName}
         </Text>
         <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
           Member since {formatDate(stats.memberSince)}

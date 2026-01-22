@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppContext, appActions } from './AppContext';
 
@@ -6,7 +6,8 @@ import { useAppContext, appActions } from './AppContext';
 export type UserAction =
   | { type: 'LOGIN_SUCCESS'; payload: any }
   | { type: 'LOGIN_FAILURE'; payload: string }
-  | { type: 'LOGOUT' };
+  | { type: 'LOGOUT' }
+  | { type: 'SET_LOADING'; payload: boolean };
 
 export interface UserState {
   currentUser: any | null;
@@ -90,7 +91,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
       dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
       return true;
     } catch (error) {
-      dispatch({ type: 'LOGIN_FAILURE', payload: error.message });
+      dispatch({ type: 'LOGIN_FAILURE', payload: (error as Error).message });
       return false;
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });

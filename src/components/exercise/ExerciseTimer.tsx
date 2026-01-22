@@ -55,7 +55,7 @@ const RepCounter: React.FC<RepCounterProps> = ({
   };
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
       <TouchableOpacity
         onPress={decrementReps}
         style={{ padding: 10, backgroundColor: '#ff4444', borderRadius: 5 }}
@@ -94,7 +94,7 @@ const WeightInput: React.FC<WeightInputProps> = ({
           backgroundColor: '#f0f0f0',
           padding: 15,
           borderRadius: 10,
-          gap: 10,
+          marginHorizontal: 10,
         }}
       >
         <TouchableOpacity

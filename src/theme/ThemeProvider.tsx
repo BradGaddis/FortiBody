@@ -134,8 +134,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     setColorMode(newMode);
   };
 
-  // Build effective theme
-  const theme: Theme = resolvedColorScheme === 'dark' ? darkTheme : lightTheme;
+  // Build effective theme with resolved text colors
+  const effectiveColors = {
+    ...colors,
+    text: resolvedColorScheme === 'dark' ? colors.textDark : colors.text,
+  };
+  const theme: Theme = {
+    colors: effectiveColors,
+    typography: typography,
+    spacing: spacing,
+    borderRadius: borderRadius,
+    shadows: shadows,
+    isDark: resolvedColorScheme === 'dark',
+  };
 
   // Don't render until initialized to avoid flash
   if (!isInitialized) {

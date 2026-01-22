@@ -1,148 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '@/types/navigation';
-import {
-  TimerDisplay,
-  TimerControls,
-  FastingStats,
-} from '@/components/nutrition/FastingTimer';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { FastingTimer } from '../../components/nutrition/FastingTimer';
+import { Ionicons } from '@expo/vector-icons';
 
-interface FastingScreenProps {
-  navigation: StackNavigationProp<RootStackParamList>;
-}
-
-const TIME_KEY = '@start_time';
-
-const FastingScreen: React.FC<FastingScreenProps> = ({ navigation }) => {
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
-  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
-
-  useEffect(() => {
-    loadStartTime();
-  }, []);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
-    if (isTimerActive && startTime) {
-      interval = setInterval(() => {
-        const now = new Date();
-        const difference = now.getTime() - startTime.getTime();
-        const hours = Math.floor(difference / 3600000);
-        const minutes = Math.floor((difference % 3600000) / 60000);
-        const seconds = Math.floor((difference % 60000) / 1000);
-
-        setElapsedTime(
-          `${hours.toString().padStart(2, '0')}:${minutes
-            .toString()
-            .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-        );
-      }, 1000);
-    } else {
-      if (interval) {
-        clearInterval(interval);
-      }
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isTimerActive, startTime]);
-
-  const loadStartTime = async () => {
-    try {
-      const storedTime = await AsyncStorage.getItem(TIME_KEY);
-      if (storedTime) {
-        setStartTime(new Date(storedTime));
-      }
-    } catch (error) {
-      console.error('Error loading start time:', error);
-    }
-  };
-
-  const saveStartTime = async (time: Date) => {
-    try {
-      await AsyncStorage.setItem(TIME_KEY, time.toISOString());
-    } catch (error) {
-      console.error('Error saving start time:', error);
-    }
-  };
-
-  const handleStartTimer = () => {
-    if (!startTime) {
-      const now = new Date();
-      setStartTime(now);
-      saveStartTime(now);
-    }
-    setIsTimerActive(true);
-  };
-
-  const handlePauseTimer = () => {
-    setIsTimerActive(false);
-  };
-
-  const handleResetTimer = () => {
-    setIsTimerActive(false);
-    setElapsedTime('00:00:00');
-    setStartTime(null);
-    AsyncStorage.removeItem(TIME_KEY);
-  };
-
+const FastingScreen: React.FC = () => {
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <View style={{ padding: 20, maxWidth: 400 }}>
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: 'bold',
-            marginBottom: 30,
-            textAlign: 'center',
-          }}
-        >
-          Intermittent Fasting Timer
-        </Text>
-
-        <TimerDisplay elapsedTime={elapsedTime} />
-
-        <FastingStats startTime={startTime} isTimerActive={isTimerActive} />
-
-        <TimerControls
-          isTimerActive={isTimerActive}
-          onStartTimer={handleStartTimer}
-          onPauseTimer={handlePauseTimer}
-          onResetTimer={handleResetTimer}
-        />
-
-        <View style={{ marginTop: 30, alignItems: 'center' }}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Enhanced Home')}
-            style={{
-              backgroundColor: '#007AFF',
-              padding: 15,
-              borderRadius: 10,
-              alignItems: 'center',
-              minWidth: 150,
-            }}
-          >
-            <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
-              Back to Home
-            </Text>
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Intermittent Fasting</Text>
+        <Text style={styles.subtitle}>Track your fasting progress</Text>
       </View>
-    </View>
+
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <FastingTimer />
+          
+          <View style={styles.infoSection}>
+            <Text style={styles.infoTitle}>How it works</Text>
+            <View style={styles.infoItem}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="restaurant-outline" size={18} color="#4CAF50" />
+              </View>
+              <Text style={styles.infoText}>Start fasting after your last meal of the day</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="time-outline" size={18} color="#4CAF50" />
+              </View>
+              <Text style={styles.infoText}>The timer tracks your fasting duration automatically</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="checkmark-circle-outline" size={18} color="#4CAF50" />
+              </View>
+              <Text style={styles.infoText}>Log a meal to end your fast and start a new one</Text>
+            </View>
+          </View>
+
+          <View style={styles.tipSection}>
+            <Text style={styles.tipTitle}>💡 Tip</Text>
+            <Text style={styles.tipText}>
+              A 16:8 fasting pattern (16 hours fasting, 8 hours eating) is a popular 
+              approach for metabolic health. Listen to your body and adjust as needed.
+            </Text>
+          </View>
+        </View>
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    padding: 20,
+    paddingBottom: 10,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  infoSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoText: {
+    fontSize: 15,
+    color: '#666',
+    flex: 1,
+    lineHeight: 20,
+  },
+  tipSection: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E65100',
+    marginBottom: 8,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#795548',
+    lineHeight: 20,
+  },
+  bottomPadding: {
+    height: 20,
+  },
+});
 
 export default FastingScreen;

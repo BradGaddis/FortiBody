@@ -87,20 +87,18 @@ export const colors = {
 
   // Text colors
   text: {
-    light: {
-      primary: '#212121',
-      secondary: '#757575',
-      tertiary: '#9E9E9E',
-      disabled: '#BDBDBD',
-      inverse: '#FFFFFF',
-    },
-    dark: {
-      primary: '#FFFFFF',
-      secondary: '#B0B0B0',
-      tertiary: '#808080',
-      disabled: '#4D4D4D',
-      inverse: '#212121',
-    },
+    primary: '#212121',
+    secondary: '#757575',
+    tertiary: '#9E9E9E',
+    disabled: '#BDBDBD',
+    inverse: '#FFFFFF',
+  },
+  textDark: {
+    primary: '#FFFFFF',
+    secondary: '#B0B0B0',
+    tertiary: '#808080',
+    disabled: '#4D4D4D',
+    inverse: '#212121',
   },
 
   // Fitness-specific colors

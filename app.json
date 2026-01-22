@@ -4,10 +4,10 @@
     "slug": "fortibody",
     "version": "1.0.8",
     "orientation": "portrait",
-  "icon": "./src/assets/icon.png",
-  "userInterfaceStyle": "light",
-  "splash": {
-    "image": "./src/assets/splash.png",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -34,6 +34,9 @@
       "eas": {
         "projectId": "1cce3f78-1a9a-43b3-b3ed-0d8ac84dac42"
       }
-    }
+    },
+    "plugins": [
+      "react-native-vision-camera"
+    ]
   }
 }

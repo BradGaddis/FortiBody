@@ -7,6 +7,7 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'other';
   height: number; // cm
   weight: number; // kg
+  weightUnit: 'kg' | 'lbs'; // default weight unit
   activityLevel: 1 | 2 | 3 | 4 | 5; // 1=sedentary, 5=very active
   goals: FitnessGoal[];
   targetWeight?: number; // target in kg
@@ -70,20 +71,23 @@ const USER_METRICS_KEY = '@user_metrics';
 const BODY_MEASUREMENTS_KEY = '@body_measurements';
 
 class UserProfileService {
-  async saveProfile(profile: Omit<UserProfile, 'id'>): Promise<void> {
+  async saveProfile(profile: Omit<UserProfile, 'id'> & { id?: string }): Promise<void> {
     try {
+      console.log('💾 saveProfile - Saving profile:', profile.name, profile.age);
       const profiles = await this.getProfiles();
-      const updatedProfiles = profiles.filter(p => p.id !== profile.id);
-      updatedProfiles.push(profile);
+      const profileId = profile.id || 'active';
+      console.log('💾 saveProfile - Filtering out existing profile with id:', profileId);
+      const updatedProfiles = profiles.filter(p => p.id !== profileId);
+      updatedProfiles.push({ ...profile, id: profileId } as UserProfile);
+      console.log('💾 saveProfile - Final profiles:', JSON.stringify(updatedProfiles));
 
       await AsyncStorage.setItem(
         USER_PROFILE_KEY,
         JSON.stringify(updatedProfiles)
       );
-      return true;
+      console.log('💾 saveProfile - Saved successfully');
     } catch (error) {
       console.error('Error saving user profile:', error);
-      return false;
     }
   }
 
@@ -100,7 +104,14 @@ class UserProfileService {
   async getActiveProfile(): Promise<UserProfile | null> {
     try {
       const profiles = await this.getProfiles();
-      return profiles.find(p => p.id === 'active') || profiles[0] || null;
+      console.log('💾 getActiveProfile - all profiles:', JSON.stringify(profiles));
+      const active = profiles.find(p => p.id === 'active');
+      if (active) {
+        console.log('💾 getActiveProfile - found active profile:', active.name);
+        return active;
+      }
+      console.log('💾 No active profile found, returning first profile or null');
+      return profiles[0] || null;
     } catch (error) {
       console.error('Error getting active profile:', error);
       return null;
@@ -162,10 +173,13 @@ class UserProfileService {
           gender: 'other',
           height: 170,
           weight: 70,
+          weightUnit: 'kg',
           activityLevel: 2,
           goals: [],
-          isActive: false,
+          medicalConditions: [],
+          limitations: [],
           createdAt: new Date(),
+          updatedAt: new Date(),
         };
         await AsyncStorage.setItem(
           USER_PROFILE_KEY,
@@ -225,7 +239,7 @@ class UserProfileService {
     } catch (error) {
       console.error('Error loading user metrics:', error);
       return {
-        weight: { current: 0 },
+        weight: { current: 0, startWeight: undefined, target: undefined, changeRate: 0, trend: 'maintaining' as const },
         bodyMeasurements: { measurements: [], lastUpdated: new Date() },
       };
     }

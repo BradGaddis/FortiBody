@@ -1123,6 +1123,177 @@ MoveNet Lightning is faster (~5ms inference) but slightly less accurate than Thu
 
 ---
 
+# AI-GUIDED FLEXIBILITY TESTING
+
+## Overview
+
+Comprehensive AI-powered flexibility assessment using on-device pose estimation. Based on the scientifically-validated Flexitest methodology (Araujo et al., 2008), adapted for automated measurement with MediaPipe Pose.
+
+## Key Principles
+
+- **21 standardized tests** covering all major joints
+- **All processing on-device** - no camera data leaves the device
+- **Integrates with fitness assessments** - flexibility scores inform workout recommendations
+- **Progress tracking over time** - trend analysis with age/gender norm comparisons
+
+## Test Suite (21 Tests)
+
+| # | Test | Body Part | Target Range |
+|---|------|-----------|--------------|
+| 1-2 | Ankle Dorsiflexion (L/R) | Ankle | 45-50° |
+| 3-4 | Ankle Plantarflexion (L/R) | Ankle | 45-50° |
+| 5-6 | Knee Flexion (L/R) | Knee | 135-150° |
+| 7-8 | Knee Extension (L/R) | Knee | 0-5° |
+| 9-10 | Hip Flexion (L/R) | Hip | 120-135° |
+| 11-12 | Hip Extension (L/R) | Hip | 30-35° |
+| 13-14 | Hip Abduction (L/R) | Hip | 45° |
+| 15-16 | Hip Adduction (L/R) | Hip | 30° |
+| 17-18 | Hip Internal Rotation (L/R) | Hip | 35-45° |
+| 19-20 | Hip External Rotation (L/R) | Hip | 45-50° |
+| 21 | Trunk Flexion | Spine | 80-90° (sit & reach) |
+| 22 | Trunk Extension | Spine | 30° |
+| 23-24 | Trunk Lateral Flexion (L/R) | Spine | 35-45° |
+| 25-26 | Shoulder Flexion (L/R) | Shoulder | 170-180° |
+| 27-28 | Shoulder Extension (L/R) | Shoulder | 50-60° |
+| 29-30 | Shoulder Abduction (L/R) | Shoulder | 170-180° |
+| 31-32 | Shoulder Internal Rotation (L/R) | Shoulder | 70° |
+| 33-34 | Shoulder External Rotation (L/R) | Shoulder | 90° |
+| 35-36 | Elbow Flexion (L/R) | Elbow | 145-160° |
+| 37-38 | Elbow Extension (L/R) | Elbow | 0° |
+| 39-40 | Wrist Flexion/Extension (L/R) | Wrist | 70-80° |
+
+## Data Architecture
+
+```typescript
+interface FlexibilityTest {
+  id: string;
+  name: string;
+  bodyPart: BodyPart;
+  side?: 'left' | 'right' | 'center';
+  landmarks: [number, number, number]; // MediaPipe indices
+  targetAngle: number;
+  minAcceptable: number;
+  instructions: string;
+}
+
+interface FlexibilityScore {
+  testId: string;
+  timestamp: Date;
+  maxAngle: number;
+  minAngle?: number;
+  symmetry?: number; // left vs right difference
+  score: number; // 0-100 normalized
+}
+
+interface FlexibilityAssessment {
+  id: string;
+  date: Date;
+  duration: number; // minutes
+  scores: FlexibilityScore[];
+  flexindex: number; // weighted composite (0-100)
+  overallGrade: 'excellent' | 'good' | 'fair' | 'limited' | 'restricted';
+  recommendations: string[];
+}
+```
+
+## Technology Stack
+
+| Component | Solution |
+|-----------|----------|
+| Pose Detection | `@gymbrosinc/react-native-mediapipe-pose` (33 landmarks) |
+| Camera | `react-native-vision-camera` |
+| Angle Calculation | Custom geometry utilities |
+| Storage | AsyncStorage (all on-device) |
+
+## MediaPipe Landmark Mapping
+
+```
+Key landmarks for flexibility:
+- Hips: 23, 24
+- Knees: 25, 26
+- Ankles: 27, 28
+- Shoulders: 11, 12
+- Elbows: 13, 14
+- Wrists: 15, 16
+```
+
+## Implementation Phases
+
+### Phase 1: Foundation (Week 1)
+- [ ] Install dependencies
+- [ ] Create MediaPipe pose detection hook
+- [ ] Implement angle calculation utilities
+- [ ] Define all 21 test configurations
+
+### Phase 2: Core Assessment (Week 2)
+- [ ] Build Guided Mode UI with camera
+- [ ] Implement real-time skeleton overlay
+- [ ] Create test-by-test flow with instructions
+- [ ] Add angle tracking during holds
+
+### Phase 3: Scoring & History (Week 3)
+- [ ] Implement scoring algorithm (0-100 per test)
+- [ ] Calculate Flexindex (weighted composite)
+- [ ] Add age/gender norm comparisons
+- [ ] Create assessment history view
+
+### Phase 4: Integration (Week 4)
+- [ ] Connect to overall fitness assessment
+- [ ] Add flexibility to user profile
+- [ ] Generate warm-up exercises based on tight areas
+- [ ] Build progress visualization
+
+## Age/Gender Norms (Simplified)
+
+| Age Range | Flexindex Average | Flexindex Good |
+|-----------|-------------------|----------------|
+| 20-29 | 55-65 | >70 |
+| 30-39 | 50-60 | >65 |
+| 40-49 | 45-55 | >60 |
+| 50-59 | 40-50 | >55 |
+| 60+ | 35-45 | >50 |
+
+*Source: Adapted from Flexitest (Araujo et al., 2008)*
+
+## Integration with Guided Workouts
+
+| Component | Flexibility Integration |
+|-----------|------------------------|
+| **Warm-up** | Dynamically generate based on tight areas |
+| **Exercise Selection** | Adapt exercises to safe ROM limits |
+| **Progress Tracking** | Show flexibility gains alongside strength |
+| **Goals** | Set flexibility improvement targets |
+| **Injury Prevention** | Flag mobility issues before intense workouts |
+
+## User Flow
+
+```
+┌─────────────────────────┐
+│  Flexibility Assessment │
+├─────────────────────────┤
+│  1. Select Tests        │ ← All 21 / Quick (8 key tests) / Custom
+│  2. Camera Setup        │ ← Position user, check visibility
+│  3. Test-by-Test Flow   │ ← Instructions → Hold → Track → Score
+│  4. Results Summary     │ ← Flexindex, grades, recommendations
+│  5. History & Trends    │ ← Compare to previous assessments
+└─────────────────────────┘
+```
+
+## Dependencies
+
+```bash
+npm install @gymbrosinc/react-native-mediapipe-pose
+npm install react-native-vision-camera
+npm install react-native-reanimated
+npm install chart.js react-native-chart-kit
+```
+
+## Reference
+
+- Araujo, C.G.S. (2008). Flexibility assessment: Normative values for Flexitest from 5 to 91 years of age. Arquivos Brasileiros de Cardiologia, 90(4), 257-263.
+
+---
+
 ## PROGRESS
 
 ### Completed (Phase 1-2)
@@ -1133,13 +1304,30 @@ MoveNet Lightning is faster (~5ms inference) but slightly less accurate than Thu
 - [x] Rep counting state machine
 - [x] TypeScript types
 
-### In Progress (Phase 3)
+### Completed (Flexibility)
+
+#### Phase 1: Foundation ✅
+- [x] Install dependencies: @gymbrosinc/react-native-mediapipe-pose, react-native-vision-camera, react-native-reanimated
+- [x] Create type definitions: `src/types/flexibility/index.ts`
+- [x] Implement angle calculation utilities: `src/services/flexibility/geometry.ts`
+- [x] Define all 21 test configurations: `src/services/flexibility/tests.ts`
+- [x] Create scoring service: `src/services/flexibility/scorer.ts`
+- [x] Export all services: `src/services/flexibility/index.ts`
+
+### In Progress (Phase 2: Core Assessment)
 - [ ] usePoseDetection hook
 - [ ] AICameraView component
-- [ ] Integration with ExerciseScreen
+- [ ] Guided Mode UI with camera
+- [ ] Test-by-test flow with instructions
+- [ ] Angle tracking during holds
 
 ### Next Steps
-1. Create `usePoseDetection` hook for React Native
-2. Build `AICameraView` with skeleton overlay
-3. Add "AI Mode" toggle to ExerciseScreen
-4. Test on device
+1. [x] Install MediaPipe pose dependencies
+2. [x] Create angle calculation utilities
+3. [x] Define test configurations
+4. [x] Implement Flexindex scoring
+5. [ ] Build usePoseDetection hook with MediaPipe
+6. [ ] Create Guided Mode UI with camera view
+7. [ ] Implement real-time angle tracking during tests
+8. [ ] Add history and trend analysis
+

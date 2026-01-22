@@ -1,8 +1,8 @@
 import React from 'react';
-import { AppProvider } from './contexts/AppContext';
-import { UserProvider } from './contexts/UserContext';
-import { NutritionProvider } from './contexts/NutritionContext';
-import { ExerciseProvider } from './contexts/ExerciseContext';
+import { AppProvider } from './AppContext';
+import { UserProvider } from './UserContext';
+import { NutritionProvider } from './NutritionContext';
+import { ExerciseProvider } from './ExerciseContext';
 
 const CombinedProvider: React.FC<{ children: React.ReactNode }> = ({
   children,

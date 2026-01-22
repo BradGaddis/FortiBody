@@ -188,10 +188,13 @@ class NutritionService {
 
   async getDailyNutrition(date: Date): Promise<DailyNutrition> {
     const entries = await this.getAllEntries();
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
+    
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    
+    const dayStart = new Date(year, month, day, 0, 0, 0, 0);
+    const dayEnd = new Date(year, month, day, 23, 59, 59, 999);
 
     const dayEntries = entries.filter(entry => {
       const entryDate = new Date(entry.date);

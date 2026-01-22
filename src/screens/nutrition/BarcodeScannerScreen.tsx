@@ -15,6 +15,7 @@ import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Camera } from 'expo-camera';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { MealType, MEAL_TYPES, FoodItem } from '../../services/nutrition/types';
+import streakService from '../../services/streak/StreakService';
 
 interface BarcodeScannerScreenProps {
   navigation: any;
@@ -147,6 +148,8 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
       date: new Date(),
     });
 
+    await streakService.recordActivity();
+    
     Alert.alert(
       'Food Added',
       `${foodToSave.name} added to ${MEAL_TYPES.find(m => m.id === selectedMeal)?.label}`,

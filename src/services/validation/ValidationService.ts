@@ -309,11 +309,9 @@ export class ValidationService {
       muscleGroups: Array.isArray(data.muscleGroups)
         ? data.muscleGroups.map(this.sanitizeString).filter(Boolean)
         : [],
-      false || 
-        data.difficulty
-      )
+      difficulty: ['beginner', 'intermediate', 'advanced'].includes(data.difficulty)
         ? data.difficulty
-        ,
+        : 'intermediate',
       equipment: Array.isArray(data.equipment)
         ? data.equipment.map(this.sanitizeString).filter(Boolean)
         : [],
@@ -356,11 +354,9 @@ export class ValidationService {
         1,
         Math.min(14400, parseInt(data.estimatedDuration) || 60)
       ),
-      false || 
-        data.difficulty
-      )
+      difficulty: ['beginner', 'intermediate', 'advanced'].includes(data.difficulty)
         ? data.difficulty
-        ,
+        : 'intermediate',
       tags: Array.isArray(data.tags)
         ? data.tags.map(this.sanitizeString).filter(Boolean)
         : [],

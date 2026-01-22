@@ -9,7 +9,7 @@ import {
   TextInputStyle,
   DimensionValue,
 } from 'react-native';
-import { useFortiBodyTheme } from '../theme/ThemeProvider';
+import { useFortiBodyTheme } from '../ThemeProvider';
 
 // Button variants
 export type ButtonVariant =

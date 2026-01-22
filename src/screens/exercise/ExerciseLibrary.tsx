@@ -1,22 +1,24 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   ScrollView,
   StyleSheet,
   SafeAreaView,
   FlatList,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  getExercisesByCategory,
+  exercises,
+  muscleGroups,
   searchExercises,
-  Exercise,
-  ExerciseCategory,
-} from '../../services/exercise/exerciseLibrary';
+  getExercisesByMuscle,
+  type Exercise,
+} from '../../data/exercises';
+import { getExerciseImage } from '../../data/exerciseImagesIndex';
 
 interface ExerciseLibraryScreenProps {
   navigation?: any;
@@ -28,51 +30,48 @@ const ExerciseLibraryScreen: React.FC<ExerciseLibraryScreenProps> = ({
   route,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (route?.params?.muscleGroup) {
-      setSelectedCategory(null);
-    }
-  }, [route?.params?.muscleGroup]);
-
-  const categories = useMemo(() => getExercisesByCategory(), []);
+  const categories = useMemo(() => {
+    return muscleGroups.map(muscle => ({
+      name: muscle.charAt(0).toUpperCase() + muscle.slice(1),
+      key: muscle,
+      exercises: getExercisesByMuscle(muscle),
+    }));
+  }, []);
 
   const allExercises = useMemo(() => {
-    let exercises = categories.flatMap(cat => cat.exercises);
-    
+    let filtered = exercises;
+
     if (route?.params?.muscleGroup) {
       const muscleGroup = route.params.muscleGroup.toLowerCase();
-      exercises = exercises.filter(ex =>
-        ex.muscleGroups.some(mg => mg.toLowerCase().includes(muscleGroup))
+      filtered = filtered.filter(ex =>
+        ex.muscle.toLowerCase().includes(muscleGroup)
       );
     }
-    
-    return exercises;
-  }, [categories, route?.params?.muscleGroup]);
+
+    return filtered;
+  }, [route?.params?.muscleGroup]);
 
   const filteredExercises = useMemo(() => {
-    let exercises = allExercises;
+    let result = allExercises;
 
     if (searchQuery.trim()) {
-      exercises = searchExercises(searchQuery.trim());
+      result = searchExercises(searchQuery.trim());
     }
 
-    if (selectedCategory) {
-      exercises = exercises.filter(
-        ex => ex.category === selectedCategory.toLowerCase()
-      );
+    if (selectedMuscle) {
+      result = result.filter(ex => ex.muscle === selectedMuscle);
     }
 
-    return exercises;
-  }, [searchQuery, selectedCategory, allExercises]);
+    return result;
+  }, [searchQuery, selectedMuscle, allExercises]);
 
   const categoryStats = useMemo(() => {
     return categories.map(cat => ({
       ...cat,
       count: cat.exercises.length,
-      key: cat.name.toLowerCase(),
     }));
   }, [categories]);
 
@@ -89,60 +88,108 @@ const ExerciseLibraryScreen: React.FC<ExerciseLibraryScreenProps> = ({
   };
 
   const navigateToExercise = (exercise: Exercise) => {
-    const routeName = `Exercise_${exercise.id}`;
-    navigation?.navigate?.('ExercisesStack', { screen: routeName });
+    navigation?.navigate?.('ExercisesStack', { screen: 'Exercise', params: { exercise } });
   };
 
-  const renderExerciseCard = ({ item }: { item: Exercise }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigateToExercise(item)}
-      activeOpacity={0.7}
-    >
-      <Image source={item.img} style={styles.cardImage} />
-      <View style={styles.cardOverlay}>
-        <TouchableOpacity
-          style={styles.heartBtn}
-          onPress={e => {
-            e.stopPropagation();
-            toggleFavorite(item.id);
-          }}
-        >
-          <Ionicons
-            name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
-            size={20}
-            color={favorites.has(item.id) ? '#F44336' : '#FFF'}
-          />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text style={styles.cardMeta}>
-          {item.muscleGroups[0]} • {item.equipment}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const navigateToFlexibility = () => {
+    navigation?.navigate?.('ExercisesStack', { screen: 'Flexibility' });
+  };
 
-  const renderCategoryChip = (category: (typeof categoryStats)[0]) => (
+  const getPlaceholderColor = (muscle: string): string => {
+    const colors: Record<string, string> = {
+      chest: '#E53935',
+      back: '#1E88E5',
+      shoulders: '#43A047',
+      biceps: '#FB8C00',
+      triceps: '#8E24AA',
+      legs: '#00ACC1',
+      quads: '#00897B',
+      hamstrings: '#7CB342',
+      glutes: '#D81B60',
+      core: '#FFB300',
+      forearms: '#6D4C41',
+      cardio: '#F44336',
+      flexibility: '#4CAF50',
+      bodyweight: '#607D8B',
+      powerlifting: '#795548',
+    };
+    return colors[muscle.toLowerCase()] || '#4CAF50';
+  };
+
+  const renderExerciseCard = ({ item }: { item: Exercise }) => {
+    const imageSource = getExerciseImage(item.id);
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigateToExercise(item)}
+        activeOpacity={0.7}
+      >
+        {imageSource ? (
+          <Image
+            source={imageSource}
+            style={styles.cardImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.cardPlaceholder, { backgroundColor: getPlaceholderColor(item.muscle) }]}>
+            <Ionicons name="fitness" size={40} color="#FFF" />
+          </View>
+        )}
+        <View style={styles.cardOverlay}>
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={e => {
+              e.stopPropagation();
+              toggleFavorite(item.id);
+            }}
+          >
+            <Ionicons
+              name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
+              size={20}
+              color={favorites.has(item.id) ? '#F44336' : '#FFF'}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.cardContent}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <View style={styles.cardMetaRow}>
+            <Text style={styles.cardMuscle} numberOfLines={1}>
+              {item.muscle.charAt(0).toUpperCase() + item.muscle.slice(1)}
+            </Text>
+          </View>
+          <View style={styles.cardFooter}>
+            <View style={styles.equipmentRow}>
+              <Ionicons name="hardware-chip-outline" size={12} color="#888" />
+              <Text style={styles.equipmentText} numberOfLines={1}>
+                {item.equipment.length > 0 ? item.equipment[0] : 'Bodyweight'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderCategoryChip = (category: typeof categoryStats[0]) => (
     <TouchableOpacity
       key={category.key}
       style={[
         styles.chip,
-        selectedCategory === category.key && styles.chipActive,
+        selectedMuscle === category.key && styles.chipActive,
       ]}
       onPress={() =>
-        setSelectedCategory(
-          selectedCategory === category.key ? null : category.key
+        setSelectedMuscle(
+          selectedMuscle === category.key ? null : category.key
         )
       }
     >
       <Text
         style={[
           styles.chipText,
-          selectedCategory === category.key && styles.chipTextActive,
+          selectedMuscle === category.key && styles.chipTextActive,
         ]}
       >
         {category.name} ({category.count})
@@ -189,16 +236,25 @@ const ExerciseLibraryScreen: React.FC<ExerciseLibraryScreenProps> = ({
           contentContainerStyle={styles.chipContainer}
         >
           <TouchableOpacity
-            style={[styles.chip, !selectedCategory && styles.chipActive]}
-            onPress={() => setSelectedCategory(null)}
+            style={[styles.chip, !selectedMuscle && styles.chipActive]}
+            onPress={() => setSelectedMuscle(null)}
           >
             <Text
               style={[
                 styles.chipText,
-                !selectedCategory && styles.chipTextActive,
+                !selectedMuscle && styles.chipTextActive,
               ]}
             >
               All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.chip}
+            onPress={navigateToFlexibility}
+          >
+            <Ionicons name="body" size={16} color="#4CAF50" />
+            <Text style={[styles.chipText, { marginLeft: 6 }]}>
+              Flexibility
             </Text>
           </TouchableOpacity>
           {categoryStats.map(renderCategoryChip)}
@@ -332,10 +388,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardPlaceholder: {
+    width: '100%',
+    height: 100,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cardImage: {
     width: '100%',
     height: 100,
-    resizeMode: 'cover',
   },
   cardOverlay: {
     position: 'absolute',
@@ -364,9 +426,27 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginBottom: 4,
   },
-  cardMeta: {
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cardMuscle: {
     fontSize: 12,
+    color: '#666',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  equipmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  equipmentText: {
+    fontSize: 11,
     color: '#888',
+    marginLeft: 4,
   },
   emptyState: {
     flex: 1,

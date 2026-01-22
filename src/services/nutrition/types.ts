@@ -93,8 +93,8 @@ export const DEFAULT_NUTRITION_GOAL: NutritionGoal = {
 };
 
 export const MEAL_TYPES: { id: MealType; label: string; icon: string }[] = [
-  { id: 'breakfast', label: 'Breakfast', icon: 'sunrise' },
-  { id: 'lunch', label: 'Lunch', icon: 'sunny' },
+  { id: 'breakfast', label: 'Breakfast', icon: 'cafe' },
+  { id: 'lunch', label: 'Lunch', icon: 'restaurant' },
   { id: 'dinner', label: 'Dinner', icon: 'moon' },
   { id: 'snacks', label: 'Snacks', icon: 'fast-food' },
 ];

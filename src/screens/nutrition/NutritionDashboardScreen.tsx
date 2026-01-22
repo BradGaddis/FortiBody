@@ -224,6 +224,13 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
+            onPress={() => navigation.navigate('FoodDiary')}
+          >
+            <Ionicons name="book-outline" size={24} color="#4CAF50" />
+            <Text style={styles.quickActionText}>Food Diary</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickAction}
             onPress={() => navigation.navigate('Fasting')}
           >
             <Ionicons name="time-outline" size={24} color="#4CAF50" />

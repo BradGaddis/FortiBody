@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,13 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BodyDiagram from '../../components/fitness/BodyDiagram';
+import FastingStatusCard from '../../components/nutrition/FastingStatusCard';
+import streakService from '../../services/streak/StreakService';
+import UserProfileService from '../../services/user/UserProfileService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -20,29 +24,33 @@ const EnhancedHomeScreen = () => {
   const [totalWorkouts, setTotalWorkouts] = useState<number>(0);
   const [userName, setUserName] = useState<string>('Athlete');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       const [streakData, workoutsData] = await Promise.all([
-        AsyncStorage.getItem('@workout_streak'),
+        streakService.getCurrentStreak(),
         AsyncStorage.getItem('@total_workouts'),
       ]);
 
-      setStreak(parseInt(streakData || '0'));
+      setStreak(streakData);
       setTotalWorkouts(parseInt(workoutsData || '0'));
 
-      const userData = await AsyncStorage.getItem('@user_profile');
-      if (userData) {
-        const profile = JSON.parse(userData);
-        setUserName(profile.name || 'Athlete');
-      }
+      const profileService = new UserProfileService();
+      const profile = await profileService.getActiveProfile();
+      setUserName(profile?.name || 'Athlete');
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData])
+  );
 
   const getStreakColor = () => {
     if (streak >= 30) return '#FF6B6B'; // Gold
@@ -144,6 +152,12 @@ const EnhancedHomeScreen = () => {
       <ScrollView style={styles.content}>
         {renderStreakCard()}
         {renderStatsCard()}
+        
+        <FastingStatusCard onPress={() => {
+          (navigation as any).navigate('NutritionStack', {
+            screen: 'Fasting',
+          });
+        }} />
         
         <View style={styles.bodyDiagramCard}>
           <Text style={styles.cardTitle}>🎯 Quick Access</Text>

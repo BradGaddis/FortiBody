@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,17 +10,25 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  TextInput,
+  Keyboard,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { total_exercises_dict } from '@/services/exercise/exercise_store';
+import UserProfileService from '@/services/user/UserProfileService';
 import AICameraView from '@/components/camera/AICameraView';
 import type { Pose, FormFeedback, RepState } from '@/types/pose';
 import { createInitialRepState } from '@/services/ai/repCounter';
+import streakService from '../../services/streak/StreakService';
 
 const HISTORY_STORAGE_KEY = '@exercise_history';
+const EXERCISE_UNIT_KEY = '@exercise_unit_';
+
+const KG_TO_LBS = 2.20462;
+const LBS_TO_KG = 0.453592;
 
 interface ExerciseScreenProps {
   name: string;
@@ -39,6 +47,7 @@ interface SessionData {
   date: Date;
   sets: SetData[];
   notes: string;
+  timestamp?: number;
 }
 
 const { width } = Dimensions.get('window');
@@ -48,10 +57,11 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   navigation,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'track' | 'history'>('overview');
-  const [currentSet, setCurrentSet] = useState<SetData>({ reps: 8, weight: 40, completed: false });
+  const [currentSet, setCurrentSet] = useState<SetData>({ reps: 0, weight: 0, completed: false });
   const [sessionSets, setSessionSets] = useState<SetData[]>([]);
   const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(90);
+  const [setWarning, setSetWarning] = useState<string | null>(null);
   const [showNotesInput, setShowNotesInput] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
   const [isAIMode, setIsAIMode] = useState(false);
@@ -61,6 +71,10 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const [aiFormFeedback, setAiFormFeedback] = useState<FormFeedback[]>([]);
   const [aiRepOverride, setAiRepOverride] = useState(0);
   const [history, setHistory] = useState<SessionData[]>([]);
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
+  const [exerciseUnitOverride, setExerciseUnitOverride] = useState<'kg' | 'lbs' | null>(null);
+  const [editingSessionIndex, setEditingSessionIndex] = useState<number | null>(null);
+  const [editingSessionSets, setEditingSessionSets] = useState<SetData[]>([]);
 
   const exercise = total_exercises_dict.find(
     (ex: any) => ex.name.toLowerCase() === name.toLowerCase()
@@ -68,7 +82,83 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
 
   useEffect(() => {
     loadHistory();
+    loadExerciseUnit();
   }, []);
+
+  const loadExerciseUnit = async () => {
+    try {
+      const profile = await UserProfileService.prototype.getActiveProfile();
+      const storedOverride = await AsyncStorage.getItem(`${EXERCISE_UNIT_KEY}${name}`);
+      
+      if (storedOverride) {
+        setExerciseUnitOverride(JSON.parse(storedOverride));
+      } else if (profile) {
+        setWeightUnit(profile.weightUnit || 'kg');
+        setExerciseUnitOverride(null);
+      }
+    } catch (error) {
+      console.log('Failed to load exercise unit:', error);
+    }
+  };
+
+  const toggleUnit = async () => {
+    const newUnit = weightUnit === 'kg' ? 'lbs' : 'kg';
+    setWeightUnit(newUnit);
+    setExerciseUnitOverride(newUnit);
+    
+    try {
+      await AsyncStorage.setItem(`${EXERCISE_UNIT_KEY}${name}`, JSON.stringify(newUnit));
+    } catch (error) {
+      console.log('Failed to save exercise unit:', error);
+    }
+  };
+
+  const getDisplayWeight = (kgWeight: number): number => {
+    const unit = exerciseUnitOverride || weightUnit;
+    if (unit === 'lbs') {
+      const lbsValue = kgWeight * KG_TO_LBS;
+      const remainder = lbsValue % 2.5;
+      if (remainder < 0.25 || remainder > 2.25) {
+        return Math.round(lbsValue);
+      }
+      return Math.round(lbsValue / 2.5) * 2.5;
+    }
+    return kgWeight;
+  };
+
+  const getRawDisplayWeight = (kgWeight: number): number => {
+    const unit = exerciseUnitOverride || weightUnit;
+    if (unit === 'lbs') {
+      return kgWeight * KG_TO_LBS;
+    }
+    return kgWeight;
+  };
+
+  const isImperial = (): boolean => {
+    return (exerciseUnitOverride || weightUnit) === 'lbs';
+  };
+
+  const getStorageWeight = (displayWeight: number): number => {
+    const unit = exerciseUnitOverride || weightUnit;
+    if (unit === 'lbs') {
+      return displayWeight / KG_TO_LBS;
+    }
+    return displayWeight;
+  };
+
+  const formatWeight = (kgWeight: number): string => {
+    const unit = exerciseUnitOverride || weightUnit;
+    const display = getDisplayWeight(kgWeight);
+    const displayStr = Number.isInteger(display) ? display.toString() : display.toFixed(1);
+    return `${displayStr} ${unit}`;
+  };
+
+  const formatHistoryWeight = (kgWeight: number): string => {
+    const unit = exerciseUnitOverride || weightUnit;
+    const display = getDisplayWeight(kgWeight);
+    const displayStr = Number.isInteger(display) ? display.toString() : display.toFixed(1);
+    return `${displayStr} ${unit}`;
+  };
 
   const loadHistory = async () => {
     try {
@@ -111,11 +201,43 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     );
   };
 
+  const cancelEditingSession = () => {
+    setEditingSessionIndex(null);
+    setEditingSessionSets([]);
+  };
+
+  const saveEditedSession = () => {
+    if (editingSessionIndex === null) return;
+    
+    const updatedHistory = [...history];
+    updatedHistory[editingSessionIndex] = {
+      ...updatedHistory[editingSessionIndex],
+      sets: editingSessionSets,
+    };
+    setHistory(updatedHistory);
+    
+    const updatedHistoryJSON = JSON.stringify(updatedHistory);
+    AsyncStorage.setItem(HISTORY_STORAGE_KEY, updatedHistoryJSON);
+    
+    setEditingSessionIndex(null);
+    setEditingSessionSets([]);
+  };
+
   const handleAddSet = () => {
-    if (currentSet.reps > 0 && currentSet.weight >= 0) {
-      setSessionSets([...sessionSets, { ...currentSet, completed: false }]);
-      setCurrentSet({ ...currentSet, reps: 8 });
+    setSetWarning(null);
+    
+    if (currentSet.reps <= 0) {
+      setSetWarning('Please enter a valid number of reps');
+      return;
     }
+    
+    if (currentSet.weight <= 0) {
+      setSetWarning('Please enter a valid weight');
+      return;
+    }
+    
+    setSessionSets([...sessionSets, { ...currentSet, completed: false }]);
+    setCurrentSet({ ...currentSet, reps: 8 });
   };
 
   const handleCompleteSet = (index: number) => {
@@ -165,8 +287,10 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
               date: new Date(),
               sets: [...sessionSets],
               notes: sessionNotes,
+              timestamp: Date.now(),
             };
             saveToHistory(session);
+            streakService.recordActivity();
             setSessionSets([]);
             setSessionNotes('');
             setActiveTab('history');
@@ -250,11 +374,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   <Text style={styles.infoLabel}>Type</Text>
                   <Text style={styles.infoValue}>{exercise.category}</Text>
                 </View>
-                <View style={styles.infoItem}>
-                  <Ionicons name="flame" size={20} color="#F44336" />
-                  <Text style={styles.infoLabel}>Difficulty</Text>
-                  <Text style={styles.infoValue}>Medium</Text>
-                </View>
               </View>
             </View>
 
@@ -314,31 +433,63 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                 <Text style={styles.statLabel}>Sets</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{getTotalVolume()}</Text>
-                <Text style={styles.statLabel}>Volume (kg)</Text>
+                <Text style={styles.statValue}>{formatWeight(getTotalVolume())}</Text>
+                <Text style={styles.statLabel}>Volume</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{getPersonalBest()}kg</Text>
+                <Text style={styles.statValue}>{formatWeight(getPersonalBest())}</Text>
                 <Text style={styles.statLabel}>Max Weight</Text>
               </View>
             </View>
 
             <View style={styles.currentSetCard}>
-              <Text style={styles.currentSetTitle}>Current Set</Text>
+              <View style={styles.currentSetHeader}>
+                <Text style={styles.currentSetTitle}>Current Set</Text>
+                <TouchableOpacity style={styles.unitToggleBtn} onPress={toggleUnit}>
+                  <Text style={styles.unitToggleText}>
+                    {(exerciseUnitOverride || weightUnit).toUpperCase()}
+                  </Text>
+                  <Ionicons name="swap-vertical" size={14} color="#4CAF50" />
+                </TouchableOpacity>
+              </View>
               <View style={styles.setInputsRow}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Weight (kg)</Text>
-                  <View style={styles.inputRow}>
+                  <Text style={styles.inputLabel}>Weight ({(exerciseUnitOverride || weightUnit)})</Text>
+                  <View style={styles.weightInputRow}>
                     <TouchableOpacity
                       style={styles.inputBtn}
-                      onPress={() => setCurrentSet(prev => ({ ...prev, weight: Math.max(0, prev.weight - 2.5) }))}
+                      onPress={() => {
+                        const currentDisplay = getRawDisplayWeight(currentSet.weight);
+                        const newDisplay = isImperial()
+                          ? Math.max(0, currentDisplay - 2.5)
+                          : Math.max(0, currentDisplay - 1);
+                        setCurrentSet(prev => ({ ...prev, weight: getStorageWeight(newDisplay) }));
+                      }}
                     >
                       <Ionicons name="remove" size={20} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.inputValue}>{currentSet.weight}</Text>
+                    <TextInput
+                      style={styles.weightTextInput}
+                      value={getRawDisplayWeight(currentSet.weight).toFixed(1)}
+                      onChangeText={(text) => {
+                        const num = parseFloat(text);
+                        if (!isNaN(num) && num >= 0) {
+                          setCurrentSet(prev => ({ ...prev, weight: getStorageWeight(num) }));
+                        }
+                      }}
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
                     <TouchableOpacity
                       style={styles.inputBtn}
-                      onPress={() => setCurrentSet(prev => ({ ...prev, weight: prev.weight + 2.5 }))}
+                      onPress={() => {
+                        const currentDisplay = getRawDisplayWeight(currentSet.weight);
+                        const newDisplay = isImperial()
+                          ? currentDisplay + 2.5
+                          : currentDisplay + 1;
+                        setCurrentSet(prev => ({ ...prev, weight: getStorageWeight(newDisplay) }));
+                      }}
                     >
                       <Ionicons name="add" size={20} color="#FFF" />
                     </TouchableOpacity>
@@ -346,14 +497,28 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                 </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Reps</Text>
-                  <View style={styles.inputRow}>
+                  <View style={styles.repsInputRow}>
                     <TouchableOpacity
                       style={styles.inputBtn}
-                      onPress={() => setCurrentSet(prev => ({ ...prev, reps: Math.max(1, prev.reps - 1) }))}
+                      onPress={() => setCurrentSet(prev => ({ ...prev, reps: Math.max(0, prev.reps - 1) }))}
                     >
                       <Ionicons name="remove" size={20} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.inputValue}>{currentSet.reps}</Text>
+                    <TextInput
+                      style={styles.repsTextInput}
+                      value={currentSet.reps.toString()}
+                      onChangeText={(text) => {
+                        const num = parseInt(text, 10);
+                        if (!isNaN(num) && num >= 0) {
+                          setCurrentSet(prev => ({ ...prev, reps: num }));
+                        }
+                      }}
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                      placeholder="0"
+                      placeholderTextColor="#999"
+                    />
                     <TouchableOpacity
                       style={styles.inputBtn}
                       onPress={() => setCurrentSet(prev => ({ ...prev, reps: prev.reps + 1 }))}
@@ -363,6 +528,12 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   </View>
                 </View>
               </View>
+              {setWarning && (
+                <View style={styles.setWarningContainer}>
+                  <Ionicons name="warning" size={16} color="#FF9800" />
+                  <Text style={styles.setWarningText}>{setWarning}</Text>
+                </View>
+              )}
               <TouchableOpacity style={styles.addSetBtn} onPress={handleAddSet}>
                 <Ionicons name="add" size={20} color="#FFF" />
                 <Text style={styles.addSetBtnText}>Add Set</Text>
@@ -386,7 +557,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   <View key={index} style={[styles.setCard, set.completed && styles.setCardCompleted]}>
                     <View style={styles.setInfo}>
                       <Text style={styles.setNumber}>Set {index + 1}</Text>
-                      <Text style={styles.setDetails}>{set.weight}kg × {set.reps} reps</Text>
+                      <Text style={styles.setDetails}>{formatWeight(set.weight)} × {set.reps} reps</Text>
                     </View>
                     {!set.completed ? (
                       <TouchableOpacity
@@ -408,7 +579,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             <View style={styles.sessionActions}>
               <View style={styles.sessionSummary}>
                 <Text style={styles.sessionSummaryText}>
-                  {sessionSets.length} sets • {getTotalVolume()}kg volume
+                  {sessionSets.length} sets • {formatWeight(getTotalVolume())} volume
                 </Text>
               </View>
 
@@ -474,20 +645,42 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   const dateStr = item.date instanceof Date 
                     ? item.date.toLocaleDateString() 
                     : new Date(item.date).toLocaleDateString();
+                  const timeStr = item.timestamp 
+                    ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : null;
                   
                   return (
                     <View style={styles.historyCard}>
                       <View style={styles.historyCardHeader}>
                         <View>
                           <Text style={styles.historyExerciseName}>{item.exerciseName}</Text>
-                          <Text style={styles.historyDate}>{dateStr}</Text>
+                          <Text style={styles.historyDate}>{dateStr}{timeStr ? ` • ${timeStr}` : ''}</Text>
+                          {item.timestamp && (
+                            <Text style={styles.timestampDebug}>
+                              {item.timestamp} ({new Date(item.timestamp).toISOString()})
+                            </Text>
+                          )}
                         </View>
-                        <TouchableOpacity
-                          style={styles.deleteHistoryBtn}
-                          onPress={() => deleteFromHistory(item.id)}
-                        >
-                          <Ionicons name="trash" size={18} color="#F44336" />
-                        </TouchableOpacity>
+                        <View style={styles.historyCardActions}>
+                          <TouchableOpacity
+                            style={styles.historyActionBtn}
+                            onPress={() => {
+                              const histIndex = history.findIndex(h => h.id === item.id);
+                              if (histIndex >= 0) {
+                                setEditingSessionIndex(histIndex);
+                                setEditingSessionSets([...item.sets]);
+                              }
+                            }}
+                          >
+                            <Ionicons name="create-outline" size={18} color="#4CAF50" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.historyActionBtn}
+                            onPress={() => deleteFromHistory(item.id)}
+                          >
+                            <Ionicons name="trash" size={18} color="#F44336" />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                       
                       <View style={styles.historyStatsRow}>
@@ -497,18 +690,18 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                         </View>
                         <View style={styles.historyStat}>
                           <Ionicons name="fitness" size={16} color="#FF5722" />
-                          <Text style={styles.historyStatText}>{totalVolume}kg vol</Text>
+                          <Text style={styles.historyStatText}>{formatHistoryWeight(totalVolume)} vol</Text>
                         </View>
                         <View style={styles.historyStat}>
                           <Ionicons name="trending-up" size={16} color="#2196F3" />
-                          <Text style={styles.historyStatText}>{maxWeight}kg max</Text>
+                          <Text style={styles.historyStatText}>{formatHistoryWeight(maxWeight)} max</Text>
                         </View>
                       </View>
                       
                       <View style={styles.historySetsRow}>
                         {item.sets.slice(0, 5).map((set, idx) => (
                           <View key={idx} style={styles.historySetBadge}>
-                            <Text style={styles.historySetText}>{set.weight}kg</Text>
+                            <Text style={styles.historySetText}>{formatHistoryWeight(set.weight)}</Text>
                             <Text style={styles.historySetReps}>{set.reps}</Text>
                           </View>
                         ))}
@@ -548,6 +741,150 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             setAiRepOverride(prev => prev + adjustment);
           }}
         />
+      </Modal>
+
+      <Modal visible={editingSessionIndex !== null} transparent animationType="slide">
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={cancelEditingSession}
+        >
+          <View style={styles.sessionEditModalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.editModalHeader}>
+              <Text style={styles.editModalTitle}>Edit Session</Text>
+              <TouchableOpacity onPress={cancelEditingSession}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.sessionEditSetsList}>
+              {editingSessionSets.map((set, idx) => (
+                <View key={idx} style={styles.sessionEditSetRow}>
+                  <View style={styles.sessionEditHeaderRow}>
+                    <Text style={styles.sessionEditSetNumber}>Set {idx + 1}</Text>
+                    {editingSessionSets.length > 1 && (
+                      <TouchableOpacity
+                        style={styles.removeSetBtn}
+                        onPress={() => {
+                          const newSets = editingSessionSets.filter((_, i) => i !== idx);
+                          setEditingSessionSets(newSets);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={20} color="#F44336" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={styles.sessionEditSetInputs}>
+                    <View style={styles.sessionEditInputGroup}>
+                      <Text style={styles.editModalLabel}>Weight</Text>
+                      <View style={styles.sessionEditInputRow}>
+                        <TouchableOpacity
+                          style={styles.editModalInputBtn}
+                          onPress={() => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = {
+                              ...newSets[idx],
+                              weight: Math.max(0, getStorageWeight(getRawDisplayWeight(newSets[idx].weight) - (isImperial() ? 2.5 : 1)))
+                            };
+                            setEditingSessionSets(newSets);
+                          }}
+                        >
+                          <Ionicons name="remove" size={18} color="#FFF" />
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.editModalTextInput}
+                          value={getRawDisplayWeight(set.weight).toFixed(1)}
+                          onChangeText={(text) => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = {
+                              ...newSets[idx],
+                              weight: getStorageWeight(parseFloat(text) || 0)
+                            };
+                            setEditingSessionSets(newSets);
+                          }}
+                          keyboardType="numeric"
+                        />
+                        <TouchableOpacity
+                          style={styles.editModalInputBtn}
+                          onPress={() => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = {
+                              ...newSets[idx],
+                              weight: getStorageWeight(getRawDisplayWeight(newSets[idx].weight) + (isImperial() ? 2.5 : 1))
+                            };
+                            setEditingSessionSets(newSets);
+                          }}
+                        >
+                          <Ionicons name="add" size={18} color="#FFF" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <View style={styles.sessionEditInputGroup}>
+                      <Text style={styles.editModalLabel}>Reps</Text>
+                      <View style={styles.sessionEditInputRow}>
+                        <TouchableOpacity
+                          style={styles.editModalInputBtn}
+                          onPress={() => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = { ...newSets[idx], reps: Math.max(0, newSets[idx].reps - 1) };
+                            setEditingSessionSets(newSets);
+                          }}
+                        >
+                          <Ionicons name="remove" size={18} color="#FFF" />
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.editModalTextInput}
+                          value={set.reps.toString()}
+                          onChangeText={(text) => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = { ...newSets[idx], reps: parseInt(text) || 0 };
+                            setEditingSessionSets(newSets);
+                          }}
+                          keyboardType="numeric"
+                        />
+                        <TouchableOpacity
+                          style={styles.editModalInputBtn}
+                          onPress={() => {
+                            const newSets = [...editingSessionSets];
+                            newSets[idx] = { ...newSets[idx], reps: newSets[idx].reps + 1 };
+                            setEditingSessionSets(newSets);
+                          }}
+                        >
+                          <Ionicons name="add" size={18} color="#FFF" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.addSetBtn}
+              onPress={() => {
+                setEditingSessionSets([...editingSessionSets, { reps: 8, weight: 0, completed: false }]);
+              }}
+            >
+              <Ionicons name="add" size={20} color="#FFF" />
+              <Text style={styles.addSetBtnText}>Add Set</Text>
+            </TouchableOpacity>
+
+            <View style={styles.editModalActions}>
+              <TouchableOpacity
+                style={[styles.editModalBtn, styles.editModalCancelBtn]}
+                onPress={cancelEditingSession}
+              >
+                <Text style={styles.editModalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editModalBtn, styles.editModalSaveBtn]}
+                onPress={saveEditedSession}
+              >
+                <Text style={styles.editModalSaveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -736,6 +1073,26 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginBottom: 16,
   },
+  currentSetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  unitToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  unitToggleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginRight: 4,
+  },
   setInputsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -756,6 +1113,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  weightInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weightTextInput: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    width: 100,
+    textAlign: 'center',
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  repsInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  repsTextInput: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    width: 80,
+    textAlign: 'center',
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  repsLabel: {
+    fontSize: 18,
+    color: '#888',
+    marginLeft: 4,
+  },
   inputBtn: {
     backgroundColor: '#4CAF50',
     width: 36,
@@ -763,6 +1157,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 8,
   },
   inputValue: {
     fontSize: 28,
@@ -784,6 +1179,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  setWarningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  setWarningText: {
+    color: '#E65100',
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
   restTimer: {
     backgroundColor: '#FFF',
@@ -955,6 +1366,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(244, 67, 54, 0.1)',
   },
+  historyCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyActionBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
   historyExerciseName: {
     fontSize: 16,
     fontWeight: '700',
@@ -963,6 +1384,12 @@ const styles = StyleSheet.create({
   historyDate: {
     fontSize: 13,
     color: '#888',
+  },
+  timestampDebug: {
+    fontSize: 10,
+    color: '#AAA',
+    marginTop: 4,
+    fontFamily: 'monospace',
   },
   historyStatsRow: {
     flexDirection: 'row',
@@ -1017,6 +1444,121 @@ const styles = StyleSheet.create({
     color: '#F44336',
     textAlign: 'center',
     marginTop: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  sessionEditModalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  editModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  editModalLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  editModalInputBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModalTextInput: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    width: 70,
+    textAlign: 'center',
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  editModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  editModalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginHorizontal: 6,
+  },
+  editModalCancelBtn: {
+    backgroundColor: '#F5F5F5',
+  },
+  editModalCancelBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  editModalSaveBtn: {
+    backgroundColor: '#4CAF50',
+  },
+  editModalSaveBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  sessionEditSetsList: {
+    maxHeight: 400,
+    marginBottom: 16,
+  },
+  sessionEditSetRow: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  sessionEditSetNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  sessionEditSetInputs: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  sessionEditInputGroup: {
+    flex: 1,
+  },
+  sessionEditInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  sessionEditHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  removeSetBtn: {
+    padding: 4,
   },
 });
 
