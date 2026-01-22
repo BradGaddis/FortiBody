@@ -15,7 +15,7 @@ import UserProfileService from '../../services/user/UserProfileService';
 interface ProfileFormProps {
   initialName?: string;
   initialAge?: string;
-  initialGender?: string;
+  initialGender?: 'male' | 'female';
   isOnboarding?: boolean;
   onComplete?: (name: string, age: string) => void;
   onSave?: (name: string, age: number, gender: string) => void;
@@ -32,7 +32,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const navigation = useNavigation();
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(initialAge);
-  const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialGender as 'male' | 'female' | 'other' || 'other');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
 
@@ -49,7 +49,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       if (profile) {
         setName(profile.name || '');
         setAge(profile.age ? String(profile.age) : '');
-        if (profile.gender) {
+        if (profile.gender && (profile.gender === 'male' || profile.gender === 'female')) {
           setGender(profile.gender);
         }
       }
@@ -175,20 +175,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             />
             <Text style={[styles.genderText, gender === 'female' && styles.genderTextSelected]}>
               Female
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.genderOption, gender === 'other' && styles.genderOptionSelected]}
-            onPress={() => setGender('other')}
-          >
-            <Ionicons 
-              name="people" 
-              size={20} 
-              color={gender === 'other' ? '#2196F3' : '#666'} 
-            />
-            <Text style={[styles.genderText, gender === 'other' && styles.genderTextSelected]}>
-              Other
             </Text>
           </TouchableOpacity>
         </View>
