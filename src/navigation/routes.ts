@@ -21,7 +21,6 @@ export type RootStackParamList = {
   ProfileDashboard: { profileId: string };
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
-  Integrations: undefined;
   NotFound: undefined;
 };
 
@@ -45,7 +44,6 @@ export type SleepStackParamList = {
 
 export type ActivityStackParamList = {
   Activity: undefined;
-  Integrations: undefined;
 };
 
 export type ExercisesStackParamList = {
@@ -79,7 +77,6 @@ export type ProfileStackParamList = {
   ProfileSetup: undefined;
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
-  Integrations: undefined;
 };
 
 export type RouteName = keyof RootStackParamList;
@@ -99,7 +96,6 @@ export const ROUTES = {
   },
   Activity: {
     Activity: 'Activity' as const,
-    Integrations: 'Integrations' as const,
   },
   Sleep: {
     Sleep: 'Sleep' as const,
@@ -132,7 +128,6 @@ export const ROUTES = {
     ProfileEdit: 'ProfileEdit' as const,
     ProfileGoals: 'ProfileGoals' as const,
     ProfileMeasurements: 'ProfileMeasurements' as const,
-    Integrations: 'Integrations' as const,
   },
   NotFound: {
     NotFound: 'NotFound' as const,

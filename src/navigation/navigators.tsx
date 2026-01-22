@@ -23,7 +23,6 @@ import SleepScreen from '../screens/sleep/SleepScreen';
 import ActivityScreen from '../screens/activity/ActivityScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import ProfileSetupScreen from '../screens/profile/ProfileSetupScreen';
-import IntegrationsScreen from '../screens/profile/IntegrationsScreen';
 import { isOnboardingComplete, getOnboardingData } from '../utils/onboarding';
 import UserProfileService from '../services/user/UserProfileService';
 import streakService from '../services/streak/StreakService';
@@ -85,7 +84,6 @@ const ProfileStackNavigator: React.FC = () => (
   <Stack.Navigator screenOptions={screenOptions} initialRouteName="Profile">
     <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
     <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 

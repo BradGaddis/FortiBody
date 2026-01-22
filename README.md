@@ -93,15 +93,6 @@ FortiBody is a comprehensive fitness tracking application with AI-powered featur
 - [x] Macro distribution guides
 - [ ] Exercise tutorial videos
 
-### Integration: UltraHuman
-- [x] UltraHuman Partner API service
-- [x] UltraHuman data types and models
-- [x] Recovery score integration
-- [x] Sleep data sync
-- [x] HRV tracking
-- [x] Metabolic insights display
-- [x] Integrations screen UI
-
 ### Testing Setup
 - [x] Jest configuration (jest-expo)
 - [x] React Native Testing Library setup
@@ -134,9 +125,6 @@ FortiBody is a comprehensive fitness tracking application with AI-powered featur
 - ✅ Pedometer step counting
 - ✅ Step goals and progress
 - ✅ Calorie burn and distance tracking
-- ✅ UltraHuman Partner API integration
-- ✅ Recovery score display
-- ✅ HRV tracking
 
 ### AI & Computer Vision
 - ✅ TensorFlow.js + MoveNet installation
@@ -159,7 +147,6 @@ FortiBody is a comprehensive fitness tracking application with AI-powered featur
 - ✅ Streak calculation from all activity data
 - ✅ Fasting goal setting and tracking
 - ✅ Activity service with step/cals/distance
-- ✅ UltraHuman API integration
 
 ### UI/UX
 - ✅ Bottom tab navigation (Home, Exercises, Nutrition, Sleep, Profile, Activity)
@@ -170,7 +157,6 @@ FortiBody is a comprehensive fitness tracking application with AI-powered featur
 - ✅ Sleep logging with quality ratings
 - ✅ Progress tracking dashboards
 - ✅ Activity dashboard with widgets
-- ✅ Integrations management screen
 
 ## Project Structure
 
@@ -193,14 +179,12 @@ src/
 │   ├── nutrition/      # Nutrition and fasting services
 │   ├── sleep/          # Sleep tracking service
 │   ├── activity/       # Activity/Google Fit service
-│   ├── integrations/   # UltraHuman integration
 │   ├── streak/         # Streak calculation
 │   ├── user/           # User profile services
 │   └── ai/             # AI/ML services
 ├── utils/              # Utility functions
 │   ├── haptics.ts      # Haptic feedback
-│   ├── fastingTimeline.ts # Fasting phases
-│   └── ultraHumanMapper.ts # UltraHuman data mapping
+│   └── fastingTimeline.ts # Fasting phases
 ├── types/              # TypeScript type definitions
 ├── navigation/         # Navigation configuration
 ├── hooks/              # Custom React hooks
@@ -220,7 +204,6 @@ src/
 - Jest + React Native Testing Library
 - Open Food Facts API
 - Google Fit API
-- UltraHuman Partner API
 
 ## Getting Started
 
@@ -252,9 +235,8 @@ yarn test
 | Pillar 5: ML Intelligence | 9 | 14 | 64% |
 | Pillar 6: Sleep Tracking | 10 | 10 | 100% |
 | Pillar 7: Education | 9 | 10 | 90% |
-| Integration: UltraHuman | 7 | 7 | 100% |
 | Testing Setup | 10 | 10 | 100% |
-| **Overall** | **86** | **93** | **92%** |
+| **Overall** | **79** | **86** | **92%** |
 
 ## Completed Tasks
 
@@ -282,8 +264,6 @@ All major features from the roadmap have been implemented:
 - ✅ Google Fit / Activity integration
 - ✅ Pedometer step counting
 - ✅ Activity dashboard
-- ✅ UltraHuman API integration
-- ✅ Recovery score display
 - ✅ Comprehensive testing setup
 - ✅ Service unit tests
 

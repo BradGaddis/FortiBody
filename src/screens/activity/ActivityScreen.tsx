@@ -12,14 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { activityService, DailyActivity, ActivityGoal } from '../../services/activity/ActivityService';
-import { ultraHumanService } from '../../services/integrations/UltraHumanService';
 import { hapticSelection, hapticSuccess } from '../../utils/haptics';
 
 const ActivityScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [todayActivity, setTodayActivity] = useState<DailyActivity | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<any>(null);
-  const [recoveryScore, setRecoveryScore] = useState<number | null>(null);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [stepGoal, setStepGoal] = useState('10000');
   const [calorieGoal, setCalorieGoal] = useState('500');
@@ -29,15 +27,13 @@ const ActivityScreen: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [activity, weekly, recovery] = await Promise.all([
+      const [activity, weekly] = await Promise.all([
         activityService.getTodayActivity(),
         activityService.getWeeklyStats(),
-        ultraHumanService.getAverageRecovery(),
       ]);
-      
+
       setTodayActivity(activity);
       setWeeklyStats(weekly);
-      setRecoveryScore(recovery);
       
       const goal = await activityService.getActivityGoal();
       setStepGoal(goal.steps.toString());
@@ -84,27 +80,6 @@ const ActivityScreen: React.FC = () => {
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {recoveryScore !== null && recoveryScore > 0 && (
-            <View style={styles.recoveryCard}>
-              <View style={styles.recoveryHeader}>
-                <Ionicons name="pulse" size={24} color="#4CAF50" />
-                <Text style={styles.recoveryTitle}>Recovery</Text>
-              </View>
-              <View style={styles.recoveryContent}>
-                <View style={styles.recoveryScoreCircle}>
-                  <Text style={styles.recoveryScore}>{recoveryScore}</Text>
-                  <Text style={styles.recoveryLabel}>/ 100</Text>
-                </View>
-                <View style={styles.recoveryDetails}>
-                  <Text style={styles.recoveryText}>
-                    {ultraHumanService.getRecoveryLabel(recoveryScore)}
-                  </Text>
-                  <Text style={styles.recoverySubtext}>7-day average</Text>
-                </View>
-              </View>
-            </View>
-          )}
-
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: '#E8F5E9' }]}>
@@ -335,57 +310,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-  },
-  recoveryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  recoveryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  recoveryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  recoveryContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  recoveryScoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recoveryScore: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  recoveryLabel: {
-    fontSize: 14,
-    color: '#4CAF50',
-  },
-  recoveryDetails: {
-    marginLeft: 16,
-  },
-  recoveryText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  recoverySubtext: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 4,
   },
   statsRow: {
     flexDirection: 'row',
