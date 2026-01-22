@@ -33,6 +33,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(initialAge);
   const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [weight, setWeight] = useState('');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +53,10 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         setAge(profile.age ? String(profile.age) : '');
         if (profile.gender && (profile.gender === 'male' || profile.gender === 'female')) {
           setGender(profile.gender);
+        }
+        if (profile.weight) {
+          setWeight(String(profile.weight));
+          setWeightUnit(profile.weightUnit || 'kg');
         }
       }
     } catch (error) {
@@ -72,6 +78,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       return;
     }
 
+    const weightNum = parseFloat(weight);
+    if (!weight || isNaN(weightNum) || weightNum < 20 || weightNum > 300) {
+      Alert.alert('Error', 'Please enter a valid weight');
+      return;
+    }
+
     setSaving(true);
     try {
       const profileService = new UserProfileService();
@@ -83,8 +95,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         age: ageNum,
         gender: gender,
         height: existingProfile?.height || 170,
-        weight: existingProfile?.weight || 70,
-        weightUnit: existingProfile?.weightUnit || 'kg',
+        weight: weightNum,
+        weightUnit: weightUnit,
         activityLevel: existingProfile?.activityLevel || 2,
         goals: existingProfile?.goals || [],
         medicalConditions: existingProfile?.medicalConditions || [],
@@ -93,7 +105,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         updatedAt: new Date(),
       });
 
-      console.log('Profile saved:', name.trim(), ageNum, gender);
+      console.log('Profile saved:', name.trim(), ageNum, gender, weightNum, weightUnit);
       onSave?.(name.trim(), ageNum, gender);
       
       if (isOnboarding) {
@@ -176,6 +188,24 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             <Text style={[styles.genderText, gender === 'female' && styles.genderTextSelected]}>
               Female
             </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Your Weight ({weightUnit}) {isOnboarding ? '' : '*'}</Text>
+        <View style={styles.weightRow}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={weight}
+            onChangeText={setWeight}
+            placeholder={`Enter weight in ${weightUnit}`}
+            placeholderTextColor="#999"
+            keyboardType="decimal-pad"
+          />
+          <TouchableOpacity
+            style={styles.unitToggle}
+            onPress={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
+          >
+            <Text style={styles.unitToggleText}>{weightUnit === 'kg' ? 'lbs' : 'kg'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -264,6 +294,22 @@ const styles = StyleSheet.create({
   },
   genderTextSelected: {
     color: '#1A1A1A',
+  },
+  weightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  unitToggle: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
+  unitToggleText: {
+    color: '#4CAF50',
+    fontWeight: '600',
+    fontSize: 14,
   },
   saveBtn: {
     backgroundColor: '#4CAF50',
