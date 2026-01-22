@@ -15,14 +15,16 @@ import UserProfileService from '../../services/user/UserProfileService';
 interface ProfileFormProps {
   initialName?: string;
   initialAge?: string;
+  initialGender?: string;
   isOnboarding?: boolean;
   onComplete?: (name: string, age: string) => void;
-  onSave?: (name: string, age: number) => void;
+  onSave?: (name: string, age: number, gender: string) => void;
 }
 
 export const ProfileForm: React.FC<ProfileFormProps> = ({
   initialName = '',
   initialAge = '',
+  initialGender = '',
   isOnboarding = false,
   onComplete,
   onSave,
@@ -30,6 +32,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const navigation = useNavigation();
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(initialAge);
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialGender as 'male' | 'female' | 'other' || 'other');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +49,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       if (profile) {
         setName(profile.name || '');
         setAge(profile.age ? String(profile.age) : '');
+        if (profile.gender) {
+          setGender(profile.gender);
+        }
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -75,7 +81,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         id: existingProfile?.id || 'active',
         name: name.trim(),
         age: ageNum,
-        gender: existingProfile?.gender || 'other',
+        gender: gender,
         height: existingProfile?.height || 170,
         weight: existingProfile?.weight || 70,
         weightUnit: existingProfile?.weightUnit || 'kg',
@@ -87,8 +93,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         updatedAt: new Date(),
       });
 
-      console.log('Profile saved:', name.trim(), ageNum);
-      onSave?.(name.trim(), ageNum);
+      console.log('Profile saved:', name.trim(), ageNum, gender);
+      onSave?.(name.trim(), ageNum, gender);
       
       if (isOnboarding) {
         onComplete?.(name.trim(), age.toString());
@@ -141,6 +147,51 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           placeholderTextColor="#999"
           keyboardType="numeric"
         />
+
+        <Text style={styles.label}>Gender {isOnboarding ? '' : '*'}</Text>
+        <View style={styles.genderContainer}>
+          <TouchableOpacity
+            style={[styles.genderOption, gender === 'male' && styles.genderOptionSelected]}
+            onPress={() => setGender('male')}
+          >
+            <Ionicons 
+              name="male" 
+              size={20} 
+              color={gender === 'male' ? '#4CAF50' : '#666'} 
+            />
+            <Text style={[styles.genderText, gender === 'male' && styles.genderTextSelected]}>
+              Male
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.genderOption, gender === 'female' && styles.genderOptionSelected]}
+            onPress={() => setGender('female')}
+          >
+            <Ionicons 
+              name="female" 
+              size={20} 
+              color={gender === 'female' ? '#E91E63' : '#666'} 
+            />
+            <Text style={[styles.genderText, gender === 'female' && styles.genderTextSelected]}>
+              Female
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.genderOption, gender === 'other' && styles.genderOptionSelected]}
+            onPress={() => setGender('other')}
+          >
+            <Ionicons 
+              name="people" 
+              size={20} 
+              color={gender === 'other' ? '#2196F3' : '#666'} 
+            />
+            <Text style={[styles.genderText, gender === 'other' && styles.genderTextSelected]}>
+              Other
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity 
           style={[styles.saveBtn, saving && styles.saveBtnDisabled]} 
@@ -196,6 +247,37 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
     backgroundColor: '#FAFAFA',
+  },
+  genderContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  genderOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    marginHorizontal: 4,
+    backgroundColor: '#FAFAFA',
+  },
+  genderOptionSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  genderText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 6,
+  },
+  genderTextSelected: {
+    color: '#1A1A1A',
   },
   saveBtn: {
     backgroundColor: '#4CAF50',
