@@ -208,7 +208,11 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
         {mealEntries.length > 0 ? (
           <View style={styles.mealEntries}>
             {mealEntries.map(entry => (
-              <View key={entry.id} style={styles.entryCard}>
+              <TouchableOpacity
+                key={entry.id}
+                style={styles.entryCard}
+                onPress={() => navigation.navigate('EditFoodEntry', { entryId: entry.id })}
+              >
                 <View style={styles.entryInfo}>
                   <Text style={styles.entryName}>{entry.food.name}</Text>
                   <Text style={styles.entryTime}>{formatTime(entry.date)}</Text>
@@ -222,9 +226,17 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
                       <Text style={styles.servingsBadgeText}>×{entry.servings.toFixed(2)}</Text>
                     </View>
                   )}
+                  <Ionicons name="chevron-forward" size={18} color="#CCC" />
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={styles.addFoodButton}
+              onPress={() => navigation.navigate('AddFood', { meal: mealType })}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
+              <Text style={styles.addFoodText}>Add food</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity

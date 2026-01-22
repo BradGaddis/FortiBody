@@ -56,6 +56,8 @@ export type NutritionStackParamList = {
   AddFood: { meal?: MealType };
   CreateFood: undefined;
   BarcodeScanner: undefined;
+  EditFoodEntry: { entryId: string };
+  EditFood: { foodId: string };
 };
 
 export type ProfileStackParamList = {
@@ -99,6 +101,8 @@ export const ROUTES = {
     AddFood: 'Add Food' as const,
     CreateFood: 'Create Food' as const,
     BarcodeScanner: 'Barcode Scanner' as const,
+    EditFoodEntry: 'Edit Food Entry' as const,
+    EditFood: 'Edit Food' as const,
   },
   Profile: {
     Profile: 'Profile' as const,

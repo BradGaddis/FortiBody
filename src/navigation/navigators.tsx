@@ -17,6 +17,8 @@ import { FoodDiaryScreen } from '../screens/nutrition/FoodDiaryScreen';
 import { AddFoodScreen } from '../screens/nutrition/AddFoodScreen';
 import { BarcodeScannerScreen } from '../screens/nutrition/BarcodeScannerScreen';
 import { CreateFoodScreen } from '../screens/nutrition/CreateFoodScreen';
+import { EditFoodScreen } from '../screens/nutrition/EditFoodScreen';
+import { EditFoodEntryScreen } from '../screens/nutrition/EditFoodEntryScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import ProfileSetupScreen from '../screens/profile/ProfileSetupScreen';
 import { isOnboardingComplete, getOnboardingData } from '../utils/onboarding';
@@ -57,6 +59,8 @@ const NutritionStackNavigator: React.FC = () => (
     <NutritionStack.Screen name="AddFood" component={AddFoodScreen} options={{ headerShown: false }} />
     <NutritionStack.Screen name="CreateFood" component={CreateFoodScreen} options={{ headerShown: false }} />
     <NutritionStack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} options={{ headerShown: false }} />
+    <NutritionStack.Screen name="EditFoodEntry" component={EditFoodEntryScreen} options={{ headerShown: false }} />
+    <NutritionStack.Screen name="EditFood" component={EditFoodScreen} options={{ headerShown: false }} />
   </NutritionStack.Navigator>
 );
 

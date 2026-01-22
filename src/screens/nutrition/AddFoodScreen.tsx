@@ -113,6 +113,22 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
     setEntryDate(newDate);
   };
 
+  const handleEditFood = (food: FoodItem) => {
+    navigation.navigate('EditFood', { foodId: food.id });
+  };
+
+  const handleDeleteFood = async (food: FoodItem) => {
+    try {
+      await nutritionService.deleteFood(food.id);
+      loadFoods();
+      if (selectedFood?.id === food.id) {
+        setSelectedFood(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete food:', error);
+    }
+  };
+
   const renderMealChip = ({ id, label }: { id: MealType; label: string }) => (
     <TouchableOpacity
       key={id}
@@ -150,6 +166,22 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
         <Text style={styles.macroText}>C: {item.carbs}g</Text>
         <Text style={styles.macroText}>F: {item.fat}g</Text>
       </View>
+      {item.isCustom && (
+        <View style={styles.foodActions}>
+          <TouchableOpacity
+            style={styles.foodActionBtn}
+            onPress={() => handleEditFood(item)}
+          >
+            <Ionicons name="create-outline" size={18} color="#4CAF50" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.foodActionBtn}
+            onPress={() => handleDeleteFood(item)}
+          >
+            <Ionicons name="trash-outline" size={18} color="#F44336" />
+          </TouchableOpacity>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -166,7 +198,10 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
       <View style={styles.header}>
         <Text style={styles.title}>Add Food</Text>
         <Text style={styles.subtitle}>
-          Search and add foods to your daily log
+          {foods.length === 0 
+            ? 'Create or scan foods to get started'
+            : 'Select a food to add to your log'
+          }
         </Text>
       </View>
 
@@ -264,7 +299,9 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionLabel}>Foods</Text>
+          {foods.length > 0 && (
+            <Text style={styles.sectionLabel}>My Foods</Text>
+          )}
           <FlatList
             data={filteredFoods}
             renderItem={renderFoodItem}
@@ -274,8 +311,8 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Ionicons name="restaurant-outline" size={48} color="#CCC" />
-                <Text style={styles.emptyText}>No foods found</Text>
-                <Text style={styles.emptySubtext}>Try a different search</Text>
+                <Text style={styles.emptyText}>No foods yet</Text>
+                <Text style={styles.emptySubtext}>Create or scan your first food</Text>
               </View>
             }
           />
@@ -575,10 +612,18 @@ const styles = StyleSheet.create({
   },
   foodMacros: {
     alignItems: 'flex-end',
+    marginRight: 12,
   },
   macroText: {
     fontSize: 12,
     color: '#888',
+  },
+  foodActions: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  foodActionBtn: {
+    padding: 8,
   },
   selectedFoodSection: {
     padding: 20,
@@ -620,20 +665,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#666',
-  },
-  servingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  servingsValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    width: 60,
-    textAlign: 'center',
   },
   servingsInput: {
     flex: 1,

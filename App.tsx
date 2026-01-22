@@ -1,6 +1,8 @@
 import 'react-native-gesture-handler';
+import 'regenerator-runtime/runtime';
 import React, { useEffect } from 'react';
 import { SafeAreaView, StatusBar, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { AppNavigator } from './src/navigation/navigators';
 import { deepLinkingConfig } from './src/navigation/config';
@@ -38,8 +40,10 @@ export default function App() {
   logger.configure({ enabled: __DEV__, minLevel: 'debug', maxLogs: 100 });
   LOG.APP.MOUNT();
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

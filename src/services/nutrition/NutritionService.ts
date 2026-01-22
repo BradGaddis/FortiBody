@@ -81,6 +81,15 @@ class NutritionService {
     }
   }
 
+  async saveFoodDatabase(foods: FoodItem[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(FOOD_DATABASE_KEY, JSON.stringify(foods));
+    } catch (error) {
+      console.error('Failed to save food database:', error);
+      throw error;
+    }
+  }
+
   async addFoodEntry(entry: Omit<FoodEntry, 'id'>): Promise<FoodEntry> {
     const newEntry: FoodEntry = {
       ...entry,
@@ -340,134 +349,7 @@ class NutritionService {
   }
 
   private getDefaultFoodDatabase(): FoodItem[] {
-    return [
-      {
-        id: 'food-1',
-        name: 'Chicken Breast',
-        servingSize: 100,
-        servingUnit: 'g',
-        calories: 165,
-        protein: 31,
-        carbs: 0,
-        fat: 3.6,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-2',
-        name: 'Brown Rice',
-        servingSize: 150,
-        servingUnit: 'g',
-        calories: 165,
-        protein: 3.8,
-        carbs: 34,
-        fat: 1.4,
-        fiber: 1.8,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-3',
-        name: 'Broccoli',
-        servingSize: 100,
-        servingUnit: 'g',
-        calories: 34,
-        protein: 2.8,
-        carbs: 7,
-        fat: 0.4,
-        fiber: 2.6,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-4',
-        name: 'Eggs',
-        servingSize: 1,
-        servingUnit: 'large',
-        calories: 78,
-        protein: 6,
-        carbs: 0.6,
-        fat: 5,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-5',
-        name: 'Oatmeal',
-        servingSize: 40,
-        servingUnit: 'g',
-        calories: 150,
-        protein: 5,
-        carbs: 27,
-        fat: 3,
-        fiber: 4,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-6',
-        name: 'Greek Yogurt',
-        servingSize: 170,
-        servingUnit: 'g',
-        calories: 100,
-        protein: 17,
-        carbs: 6,
-        fat: 0.7,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-7',
-        name: 'Salmon',
-        servingSize: 100,
-        servingUnit: 'g',
-        calories: 208,
-        protein: 20,
-        carbs: 0,
-        fat: 13,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-8',
-        name: 'Sweet Potato',
-        servingSize: 150,
-        servingUnit: 'g',
-        calories: 130,
-        protein: 2,
-        carbs: 30,
-        fat: 0.1,
-        fiber: 4,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-9',
-        name: 'Banana',
-        servingSize: 1,
-        servingUnit: 'medium',
-        calories: 105,
-        protein: 1.3,
-        carbs: 27,
-        fat: 0.4,
-        fiber: 3.1,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-      {
-        id: 'food-10',
-        name: 'Almonds',
-        servingSize: 28,
-        servingUnit: 'g',
-        calories: 164,
-        protein: 6,
-        carbs: 6,
-        fat: 14,
-        fiber: 3.5,
-        isCustom: false,
-        createdAt: new Date(),
-      },
-    ];
+    return [];
   }
 }
 
