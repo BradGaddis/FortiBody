@@ -5,12 +5,13 @@ export interface UserProfile {
   name: string;
   age: number;
   gender: 'male' | 'female' | 'other';
-  height: number; // cm
-  weight: number; // kg
-  weightUnit: 'kg' | 'lbs'; // default weight unit
-  activityLevel: 1 | 2 | 3 | 4 | 5; // 1=sedentary, 5=very active
+  height: number;
+  weight: number;
+  weightUnit: 'kg' | 'lbs';
+  measurementSystem: 'metric' | 'imperial';
+  activityLevel: 1 | 2 | 3 | 4 | 5;
   goals: FitnessGoal[];
-  targetWeight?: number; // target in kg
+  targetWeight?: number;
   medicalConditions: string[];
   limitations: string[];
   profilePicture?: string;
@@ -174,6 +175,7 @@ class UserProfileService {
           height: 170,
           weight: 70,
           weightUnit: 'kg',
+          measurementSystem: 'metric',
           activityLevel: 2,
           goals: [],
           medicalConditions: [],

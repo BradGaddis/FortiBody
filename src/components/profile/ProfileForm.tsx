@@ -16,6 +16,8 @@ interface ProfileFormProps {
   initialName?: string;
   initialAge?: string;
   initialGender?: 'male' | 'female';
+  initialWeight?: string;
+  initialWeightUnit?: 'kg' | 'lbs';
   isOnboarding?: boolean;
   onComplete?: (name: string, age: string) => void;
   onSave?: (name: string, age: number, gender: string) => void;
@@ -25,6 +27,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   initialName = '',
   initialAge = '',
   initialGender = '',
+  initialWeight = '',
+  initialWeightUnit = 'kg',
   isOnboarding = false,
   onComplete,
   onSave,
@@ -33,8 +37,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(initialAge);
   const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [weight, setWeight] = useState('');
-  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
+  const [weight, setWeight] = useState(initialWeight);
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(initialWeightUnit);
+  const [measurementSystem, setMeasurementSystem] = useState<'metric' | 'imperial'>('metric');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
 
@@ -57,6 +62,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         if (profile.weight) {
           setWeight(String(profile.weight));
           setWeightUnit(profile.weightUnit || 'kg');
+        }
+        if ((profile as any).measurementSystem) {
+          setMeasurementSystem((profile as any).measurementSystem);
         }
       }
     } catch (error) {
@@ -97,6 +105,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         height: existingProfile?.height || 170,
         weight: weightNum,
         weightUnit: weightUnit,
+        measurementSystem: measurementSystem,
         activityLevel: existingProfile?.activityLevel || 2,
         goals: existingProfile?.goals || [],
         medicalConditions: existingProfile?.medicalConditions || [],
@@ -105,7 +114,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         updatedAt: new Date(),
       });
 
-      console.log('Profile saved:', name.trim(), ageNum, gender, weightNum, weightUnit);
+      console.log('Profile saved:', name.trim(), ageNum, gender, weightNum, weightUnit, measurementSystem);
       onSave?.(name.trim(), ageNum, gender);
       
       if (isOnboarding) {
@@ -206,6 +215,37 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             onPress={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
           >
             <Text style={styles.unitToggleText}>{weightUnit === 'kg' ? 'lbs' : 'kg'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Measurement System {isOnboarding ? '' : '*'}</Text>
+        <View style={styles.systemContainer}>
+          <TouchableOpacity
+            style={[styles.systemOption, measurementSystem === 'metric' && styles.systemOptionSelected]}
+            onPress={() => setMeasurementSystem('metric')}
+          >
+            <Ionicons 
+              name="globe" 
+              size={20} 
+              color={measurementSystem === 'metric' ? '#4CAF50' : '#666'} 
+            />
+            <Text style={[styles.systemText, measurementSystem === 'metric' && styles.systemTextSelected]}>
+              Metric (kg, cm)
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.systemOption, measurementSystem === 'imperial' && styles.systemOptionSelected]}
+            onPress={() => setMeasurementSystem('imperial')}
+          >
+            <Ionicons 
+              name="flag" 
+              size={20} 
+              color={measurementSystem === 'imperial' ? '#FF9800' : '#666'} 
+            />
+            <Text style={[styles.systemText, measurementSystem === 'imperial' && styles.systemTextSelected]}>
+              Imperial (lbs, in)
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -310,6 +350,37 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '600',
     fontSize: 14,
+  },
+  systemContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  systemOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    marginHorizontal: 4,
+    backgroundColor: '#FAFAFA',
+  },
+  systemOptionSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  systemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 6,
+  },
+  systemTextSelected: {
+    color: '#1A1A1A',
   },
   saveBtn: {
     backgroundColor: '#4CAF50',
