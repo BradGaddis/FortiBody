@@ -8,8 +8,9 @@ import {
   Alert,
   ScrollView,
   SafeAreaView,
+  Image,
 } from 'react-native';
-import { ImagePicker } from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { Exercise } from '@/services/exercise/exerciseLibrary';
 
 interface CreateExerciseProps {
@@ -57,8 +58,8 @@ const CreateExerciseScreen = ({
         quality: 0.8,
       });
 
-      if (!result.canceled) {
-        setSelectedImage(result.uri);
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);

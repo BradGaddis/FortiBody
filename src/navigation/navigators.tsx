@@ -148,6 +148,7 @@ const migrateOnboardingData = async (): Promise<void> => {
         height: 170,
         weight: 70,
         weightUnit: 'kg',
+        measurementSystem: 'metric',
         activityLevel: 2,
         goals: [],
         medicalConditions: [],

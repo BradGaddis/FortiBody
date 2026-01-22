@@ -83,7 +83,7 @@ const ActivityScreen: React.FC = () => {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="footsteps" size={24} color="#4CAF50" />
+                <Ionicons name="walk" size={24} color="#4CAF50" />
               </View>
               <Text style={styles.statValue}>
                 {todayActivity?.steps.toLocaleString() || '0'}

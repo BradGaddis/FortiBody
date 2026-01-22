@@ -36,7 +36,8 @@
       }
     },
     "plugins": [
-      "react-native-vision-camera"
+      "expo-font",
+      "expo-barcode-scanner"
     ]
   }
 }

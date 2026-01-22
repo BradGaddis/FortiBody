@@ -197,8 +197,16 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     if (editingSessionIndex === null) return;
     
     const updatedHistory = [...history];
+    const existingSession = updatedHistory[editingSessionIndex];
+    if (!existingSession) return;
+    
     updatedHistory[editingSessionIndex] = {
-      ...updatedHistory[editingSessionIndex],
+      ...existingSession,
+      id: existingSession.id || Date.now().toString(),
+      exerciseName: existingSession.exerciseName || '',
+      date: existingSession.date || new Date(),
+      notes: existingSession.notes || '',
+      timestamp: existingSession.timestamp,
       sets: editingSessionSets,
     };
     setHistory(updatedHistory);
@@ -769,10 +777,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           style={styles.editModalInputBtn}
                           onPress={() => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = {
-                              ...newSets[idx],
-                              weight: Math.max(0, getStorageWeight(getRawDisplayWeight(newSets[idx].weight) - (isImperial() ? 2.5 : 1)))
-                            };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                weight: Math.max(0, getStorageWeight(getRawDisplayWeight(currentSet.weight) - (isImperial() ? 2.5 : 1))),
+                                reps: currentSet.reps ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                         >
@@ -783,10 +796,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           value={getRawDisplayWeight(set.weight).toFixed(1)}
                           onChangeText={(text) => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = {
-                              ...newSets[idx],
-                              weight: getStorageWeight(parseFloat(text) || 0)
-                            };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                weight: getStorageWeight(parseFloat(text) || 0),
+                                reps: currentSet.reps ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                           keyboardType="numeric"
@@ -795,10 +813,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           style={styles.editModalInputBtn}
                           onPress={() => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = {
-                              ...newSets[idx],
-                              weight: getStorageWeight(getRawDisplayWeight(newSets[idx].weight) + (isImperial() ? 2.5 : 1))
-                            };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                weight: getStorageWeight(getRawDisplayWeight(currentSet.weight) + (isImperial() ? 2.5 : 1)),
+                                reps: currentSet.reps ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                         >
@@ -813,7 +836,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           style={styles.editModalInputBtn}
                           onPress={() => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = { ...newSets[idx], reps: Math.max(0, newSets[idx].reps - 1) };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                reps: Math.max(0, (currentSet.reps ?? 0) - 1),
+                                weight: currentSet.weight ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                         >
@@ -824,7 +855,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           value={set.reps.toString()}
                           onChangeText={(text) => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = { ...newSets[idx], reps: parseInt(text) || 0 };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                reps: parseInt(text) || 0,
+                                weight: currentSet.weight ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                           keyboardType="numeric"
@@ -833,7 +872,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                           style={styles.editModalInputBtn}
                           onPress={() => {
                             const newSets = [...editingSessionSets];
-                            newSets[idx] = { ...newSets[idx], reps: newSets[idx].reps + 1 };
+                            const currentSet = newSets[idx];
+                            if (currentSet) {
+                              newSets[idx] = {
+                                ...currentSet,
+                                reps: (currentSet.reps ?? 0) + 1,
+                                weight: currentSet.weight ?? 0,
+                                completed: currentSet.completed ?? false
+                              };
+                            }
                             setEditingSessionSets(newSets);
                           }}
                         >

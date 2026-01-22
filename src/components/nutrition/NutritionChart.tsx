@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -60,9 +60,8 @@ export const NutritionChart: React.FC<NutritionChartProps> = ({ data, viewMode }
             <Text style={styles.yAxisLabel}>{maxCalories}</Text>
             <Text style={styles.yAxisLabel}>0</Text>
           </View>
-          
           <View style={styles.chartArea}>
-            <View style={styles.chart} horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView style={styles.chart} horizontal showsHorizontalScrollIndicator={false}>
               <View style={[styles.barsContainer, { width: chartWidth }]}>
                 {barData.map((item, index) => {
                   const caloriesHeight = (item.calories / maxCalories) * CHART_HEIGHT;
@@ -83,7 +82,7 @@ export const NutritionChart: React.FC<NutritionChartProps> = ({ data, viewMode }
                   );
                 })}
               </View>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </View>
