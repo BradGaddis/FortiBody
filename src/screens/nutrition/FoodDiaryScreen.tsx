@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { FoodEntry, MealType, MEAL_TYPES } from '../../services/nutrition/types';
+import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
 interface FoodDiaryScreenProps {
   navigation: any;
@@ -211,7 +212,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
               <TouchableOpacity
                 key={entry.id}
                 style={styles.entryCard}
-                onPress={() => navigation.navigate('EditFoodEntry', { entryId: entry.id })}
+                onPress={() => {
+                  hapticSelection();
+                  navigation.navigate('EditFoodEntry', { entryId: entry.id });
+                }}
               >
                 <View style={styles.entryInfo}>
                   <Text style={styles.entryName}>{entry.food.name}</Text>
@@ -232,7 +236,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
             ))}
             <TouchableOpacity
               style={styles.addFoodButton}
-              onPress={() => navigation.navigate('AddFood', { meal: mealType })}
+              onPress={() => {
+                hapticSelection();
+                navigation.navigate('AddFood', { meal: mealType });
+              }}
             >
               <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
               <Text style={styles.addFoodText}>Add food</Text>
@@ -241,7 +248,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
         ) : (
           <TouchableOpacity
             style={styles.addFoodButton}
-            onPress={() => navigation.navigate('AddFood', { meal: mealType })}
+            onPress={() => {
+              hapticSelection();
+              navigation.navigate('AddFood', { meal: mealType });
+            }}
           >
             <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
             <Text style={styles.addFoodText}>Add food</Text>
@@ -265,11 +275,17 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
         <Text style={styles.title}>Food Diary</Text>
         
         <View style={styles.dateNavigation}>
-          <TouchableOpacity style={styles.dateNavBtn} onPress={() => navigateDay(-1)}>
+          <TouchableOpacity style={styles.dateNavBtn} onPress={() => {
+            hapticSelection();
+            navigateDay(-1);
+          }}>
             <Ionicons name="chevron-back" size={24} color="#4CAF50" />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.dateDisplay} onPress={openCalendar}>
+          <TouchableOpacity style={styles.dateDisplay} onPress={() => {
+            hapticSelection();
+            openCalendar();
+          }}>
             <Text style={styles.dateTitle}>{formatDateHeader(selectedDate)}</Text>
             {!isToday && (
               <Text style={styles.dateSubtitle}>{formatDateForDisplay(selectedDate)}</Text>
@@ -278,7 +294,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
           
           <TouchableOpacity 
             style={[styles.dateNavBtn, isToday && styles.dateNavBtnDisabled]} 
-            onPress={() => navigateDay(1)}
+            onPress={() => {
+              hapticSelection();
+              navigateDay(1);
+            }}
             disabled={isToday}
           >
             <Ionicons 
@@ -288,13 +307,19 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
             />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.calendarBtn} onPress={openCalendar}>
+          <TouchableOpacity style={styles.calendarBtn} onPress={() => {
+            hapticSelection();
+            openCalendar();
+          }}>
             <Ionicons name="calendar-outline" size={24} color="#4CAF50" />
           </TouchableOpacity>
         </View>
         
         {!isToday && (
-          <TouchableOpacity style={styles.todayButton} onPress={goToToday}>
+          <TouchableOpacity style={styles.todayButton} onPress={() => {
+            hapticSelection();
+            goToToday();
+          }}>
             <Text style={styles.todayButtonText}>Go to Today</Text>
           </TouchableOpacity>
         )}
@@ -337,7 +362,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
         {entries.length > 0 && (
           <TouchableOpacity
             style={styles.addMoreButton}
-            onPress={() => navigation.navigate('AddFood')}
+            onPress={() => {
+              hapticSelection();
+              navigation.navigate('AddFood');
+            }}
           >
             <Ionicons name="add-circle" size={24} color="#4CAF50" />
             <Text style={styles.addMoreText}>Add more food</Text>
@@ -364,7 +392,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
             </View>
 
             <View style={styles.calendarMonthNav}>
-              <TouchableOpacity onPress={() => navigateMonth(-1)}>
+              <TouchableOpacity onPress={() => {
+                hapticSelection();
+                navigateMonth(-1);
+              }}>
                 <Ionicons name="chevron-back" size={24} color="#4CAF50" />
               </TouchableOpacity>
               <Text style={styles.calendarMonthTitle}>
@@ -373,7 +404,10 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
                   year: 'numeric',
                 })}
               </Text>
-              <TouchableOpacity onPress={() => navigateMonth(1)}>
+              <TouchableOpacity onPress={() => {
+                hapticSelection();
+                navigateMonth(1);
+              }}>
                 <Ionicons name="chevron-forward" size={24} color="#4CAF50" />
               </TouchableOpacity>
             </View>
@@ -394,7 +428,12 @@ export const FoodDiaryScreen: React.FC<FoodDiaryScreenProps> = ({ navigation }) 
                     date && isCurrentDay(date) && !isSelectedDate(date) && styles.calendarDayCurrent,
                     !date && styles.calendarDayEmpty,
                   ]}
-                  onPress={() => date && selectDateFromCalendar(date)}
+                  onPress={() => {
+                    if (date) {
+                      hapticSuccess();
+                      selectDateFromCalendar(date);
+                    }
+                  }}
                   disabled={!date}
                 >
                   {date && (

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NutritionStackParamList } from '../../navigation/routes';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { FoodEntry, MealType, MEAL_TYPES } from '../../services/nutrition/types';
+import { hapticSelection, hapticSuccess, hapticError, hapticMedium } from '../../utils/haptics';
 
 type EditFoodEntryRouteProp = RouteProp<NutritionStackParamList, 'EditFoodEntry'>;
 
@@ -94,11 +95,13 @@ export const EditFoodEntryScreen: React.FC = () => {
 
     const servingsValue = getServingsValue();
     if (servingsValue <= 0) {
+      hapticMedium();
       return;
     }
 
     try {
       setSaving(true);
+      hapticSuccess();
       
       const updatedFood = {
         ...entry.food,
@@ -123,6 +126,7 @@ export const EditFoodEntryScreen: React.FC = () => {
   const handleDelete = async () => {
     try {
       setSaving(true);
+      hapticError();
       await nutritionService.deleteEntry(entryId);
       navigation.goBack();
     } catch (error) {
@@ -203,7 +207,10 @@ export const EditFoodEntryScreen: React.FC = () => {
                   styles.mealChip,
                   selectedMeal === id && styles.mealChipActive,
                 ]}
-                onPress={() => setSelectedMeal(id)}
+                onPress={() => {
+                  hapticSelection();
+                  setSelectedMeal(id);
+                }}
               >
                 <Text
                   style={[

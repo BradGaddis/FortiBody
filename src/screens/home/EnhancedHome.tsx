@@ -15,6 +15,7 @@ import BodyDiagram from '../../components/fitness/BodyDiagram';
 import FastingStatusCard from '../../components/nutrition/FastingStatusCard';
 import streakService from '../../services/streak/StreakService';
 import UserProfileService from '../../services/user/UserProfileService';
+import { hapticSelection, hapticMedium } from '../../utils/haptics';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -111,6 +112,7 @@ const EnhancedHomeScreen = () => {
       <TouchableOpacity
         style={[styles.quickActionButton, { backgroundColor: '#007AFF' }]}
         onPress={() => {
+          hapticSelection();
           (navigation as any).navigate('ExercisesStack', {
             screen: 'ExerciseLibrary',
           });
@@ -121,6 +123,7 @@ const EnhancedHomeScreen = () => {
       <TouchableOpacity
         style={[styles.quickActionButton, { backgroundColor: '#28a745' }]}
         onPress={() => {
+          hapticSelection();
           (navigation as any).navigate('ExercisesStack', {
             screen: 'Favorites',
           });
@@ -131,6 +134,7 @@ const EnhancedHomeScreen = () => {
       <TouchableOpacity
         style={[styles.quickActionButton, { backgroundColor: '#CD7F32' }]}
         onPress={() => {
+          hapticSelection();
           (navigation as any).navigate('ExercisesStack', {
             screen: 'CreateExercise',
           });

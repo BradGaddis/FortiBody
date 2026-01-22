@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { MealType, MEAL_TYPES } from '../../services/nutrition/types';
+import { hapticSelection, hapticMedium, hapticError } from '../../utils/haptics';
 
 interface NutritionDashboardProps {
   navigation: any;
@@ -95,6 +96,7 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
+          hapticError();
           await nutritionService.deleteEntry(id);
           loadTodayData();
         },
@@ -103,6 +105,7 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
   };
 
   const navigateToEdit = (entry: DailyEntry) => {
+    hapticSelection();
     navigation.navigate('NutritionStack', {
       screen: 'EditFoodEntry',
       params: { entryId: entry.id },
@@ -231,21 +234,30 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => navigation.navigate('FoodDiary')}
+            onPress={() => {
+              hapticSelection();
+              navigation.navigate('FoodDiary');
+            }}
           >
             <Ionicons name="book-outline" size={24} color="#4CAF50" />
             <Text style={styles.quickActionText}>Food Diary</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => navigation.navigate('Fasting')}
+            onPress={() => {
+              hapticSelection();
+              navigation.navigate('Fasting');
+            }}
           >
             <Ionicons name="time-outline" size={24} color="#4CAF50" />
             <Text style={styles.quickActionText}>Fasting</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickAction}
-            onPress={() => navigation.navigate('AddFood')}
+            onPress={() => {
+              hapticSelection();
+              navigation.navigate('AddFood');
+            }}
           >
             <Ionicons name="add-circle-outline" size={24} color="#4CAF50" />
             <Text style={styles.quickActionText}>Add Food</Text>

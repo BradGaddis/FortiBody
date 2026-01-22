@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { FastingTimer } from '../../components/nutrition/FastingTimer';
 import { fastingService, FASTING_SPLITS, FastingSplit } from '../../services/nutrition/FastingService';
+import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
 const FastingScreen: React.FC = () => {
   const [currentSplit, setCurrentSplit] = useState<FastingSplit>(FASTING_SPLITS[0]);
@@ -35,6 +36,7 @@ const FastingScreen: React.FC = () => {
   };
 
   const handleSplitSelect = async (split: FastingSplit) => {
+    hapticSuccess();
     if (split.id === 'custom') {
       setShowSplitPicker(false);
       setShowCustomModal(true);
@@ -52,6 +54,7 @@ const FastingScreen: React.FC = () => {
   const handleCustomSave = async () => {
     const trimmed = customHours.trim();
     if (trimmed === '') {
+      hapticSuccess();
       await fastingService.setCustomHours(null);
       const indefiniteSplit: FastingSplit = {
         id: 'indefinite',
@@ -67,8 +70,10 @@ const FastingScreen: React.FC = () => {
 
     const hours = parseFloat(trimmed);
     if (isNaN(hours) || hours < 1 || hours > 24) {
+      hapticMedium();
       return;
     }
+    hapticSuccess();
     await fastingService.setCustomHours(hours);
     const customSplit: FastingSplit = {
       id: 'custom',
@@ -102,7 +107,10 @@ const FastingScreen: React.FC = () => {
         <View style={styles.content}>
           <TouchableOpacity
             style={styles.splitSelector}
-            onPress={() => setShowSplitPicker(true)}
+            onPress={() => {
+              hapticSelection();
+              setShowSplitPicker(true);
+            }}
             activeOpacity={0.8}
           >
             <View style={styles.splitInfo}>

@@ -16,6 +16,7 @@ import { nutritionService } from '../../services/nutrition/NutritionService';
 import { fastingService } from '../../services/nutrition/FastingService';
 import { FoodItem, MealType, MEAL_TYPES } from '../../services/nutrition/types';
 import streakService from '../../services/streak/StreakService';
+import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -54,6 +55,7 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   );
 
   const handleAddFoodClick = () => {
+    hapticSelection();
     setEntryDate(new Date());
     setConfirmModalVisible(true);
   };
@@ -63,10 +65,12 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
 
     const parsedServings = parseFloat(servings);
     if (isNaN(parsedServings) || parsedServings <= 0) {
+      hapticMedium();
       setConfirmModalVisible(false);
       return;
     }
 
+    hapticSuccess();
     await nutritionService.addFoodEntry({
       foodId: selectedFood.id,
       food: selectedFood,
