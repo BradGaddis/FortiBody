@@ -21,6 +21,7 @@ export type RootStackParamList = {
   ProfileDashboard: { profileId: string };
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
+  Integrations: undefined;
   NotFound: undefined;
 };
 

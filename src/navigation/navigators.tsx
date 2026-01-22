@@ -96,9 +96,9 @@ const MainTabNavigator: React.FC = () => (
         let iconName: any = 'home';
         switch (route.name) {
           case 'HomeStack': iconName = focused ? 'home' : 'home-outline'; break;
-          case 'ExercisesStack': iconName = focused ? 'fitness-center' : 'fitness-center-outline'; break;
+          case 'ExercisesStack': iconName = focused ? 'barbell' : 'barbell-outline'; break;
           case 'NutritionStack': iconName = focused ? 'restaurant' : 'restaurant-outline'; break;
-          case 'ActivityStack': iconName = focused ? 'walk' : 'walk-outline'; break;
+          case 'ActivityStack': iconName = focused ? 'body' : 'body-outline'; break;
           case 'SleepStack': iconName = focused ? 'moon' : 'moon-outline'; break;
         }
         return <Ionicons name={iconName} size={size} color={color} />;
