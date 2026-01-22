@@ -18,6 +18,8 @@ interface ProfileFormProps {
   initialGender?: 'male' | 'female';
   initialWeight?: string;
   initialWeightUnit?: 'kg' | 'lbs';
+  initialHeight?: string;
+  initialHeightUnit?: 'cm' | 'in';
   isOnboarding?: boolean;
   onComplete?: (name: string, age: string) => void;
   onSave?: (name: string, age: number, gender: string) => void;
@@ -29,6 +31,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   initialGender = '',
   initialWeight = '',
   initialWeightUnit = 'kg',
+  initialHeight = '',
+  initialHeightUnit = 'cm',
   isOnboarding = false,
   onComplete,
   onSave,
@@ -39,6 +43,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [weight, setWeight] = useState(initialWeight);
   const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(initialWeightUnit);
+  const [height, setHeight] = useState(initialHeight);
+  const [heightUnit, setHeightUnit] = useState<'cm' | 'in'>(initialHeightUnit);
   const [measurementSystem, setMeasurementSystem] = useState<'metric' | 'imperial'>('metric');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
@@ -62,6 +68,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         if (profile.weight) {
           setWeight(String(profile.weight));
           setWeightUnit(profile.weightUnit || 'kg');
+        }
+        if (profile.height) {
+          setHeight(String(profile.height));
         }
         if ((profile as any).measurementSystem) {
           setMeasurementSystem((profile as any).measurementSystem);
@@ -92,6 +101,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       return;
     }
 
+    const heightNum = parseFloat(height);
+    if (!height || isNaN(heightNum) || heightNum < 100 || heightNum > 250) {
+      Alert.alert('Error', 'Please enter a valid height');
+      return;
+    }
+
     setSaving(true);
     try {
       const profileService = new UserProfileService();
@@ -102,7 +117,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         name: name.trim(),
         age: ageNum,
         gender: gender,
-        height: existingProfile?.height || 170,
+        height: heightNum,
         weight: weightNum,
         weightUnit: weightUnit,
         measurementSystem: measurementSystem,
@@ -215,6 +230,24 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             onPress={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
           >
             <Text style={styles.unitToggleText}>{weightUnit === 'kg' ? 'lbs' : 'kg'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Your Height ({heightUnit}) {isOnboarding ? '' : '*'}</Text>
+        <View style={styles.weightRow}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={height}
+            onChangeText={setHeight}
+            placeholder={`Enter height in ${heightUnit}`}
+            placeholderTextColor="#999"
+            keyboardType="decimal-pad"
+          />
+          <TouchableOpacity
+            style={styles.unitToggle}
+            onPress={() => setHeightUnit(heightUnit === 'cm' ? 'in' : 'cm')}
+          >
+            <Text style={styles.unitToggleText}>{heightUnit === 'cm' ? 'in' : 'cm'}</Text>
           </TouchableOpacity>
         </View>
 
