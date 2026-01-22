@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -153,7 +154,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         <Text style={styles.title}>
           {isOnboarding ? 'Quick Profile Setup' : 'Profile Details'}
@@ -292,7 +293,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -310,6 +311,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     paddingTop: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,
