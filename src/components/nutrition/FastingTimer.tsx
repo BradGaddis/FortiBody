@@ -132,7 +132,7 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
     return (
       <TouchableOpacity style={styles.compactCard} onPress={onPress} activeOpacity={0.8}>
         <Ionicons 
-          name={isIndefinite ? 'infinite' : 'time-outline'} 
+          name={isIndefinite ? 'hourglass' : 'time-outline'} 
           size={20} 
           color={iconColor} 
         />
@@ -154,7 +154,7 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
       <View style={styles.header}>
         <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
           <Ionicons 
-            name={isIndefinite ? 'infinite' : (fastingStatus.isGoalReached ? 'checkmark-circle' : 'time-outline')} 
+            name={isIndefinite ? 'hourglass' : (fastingStatus.isGoalReached ? 'checkmark-circle' : 'time-outline')} 
             size={32} 
             color={iconColor} 
           />
