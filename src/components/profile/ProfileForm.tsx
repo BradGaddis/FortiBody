@@ -18,9 +18,7 @@ interface ProfileFormProps {
   initialAge?: string;
   initialGender?: 'male' | 'female';
   initialWeight?: string;
-  initialWeightUnit?: 'kg' | 'lbs';
   initialHeight?: string;
-  initialHeightUnit?: 'cm' | 'in';
   isOnboarding?: boolean;
   onComplete?: (name: string, age: string) => void;
   onSave?: (name: string, age: number, gender: string) => void;
@@ -31,9 +29,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   initialAge = '',
   initialGender = '',
   initialWeight = '',
-  initialWeightUnit = 'kg',
   initialHeight = '',
-  initialHeightUnit = 'cm',
   isOnboarding = false,
   onComplete,
   onSave,
@@ -43,12 +39,13 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const [age, setAge] = useState(initialAge);
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [weight, setWeight] = useState(initialWeight);
-  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(initialWeightUnit);
   const [height, setHeight] = useState(initialHeight);
-  const [heightUnit, setHeightUnit] = useState<'cm' | 'in'>(initialHeightUnit);
   const [measurementSystem, setMeasurementSystem] = useState<'metric' | 'imperial'>('metric');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
+
+  const weightUnit = measurementSystem === 'metric' ? 'kg' : 'lbs';
+  const heightUnit = measurementSystem === 'metric' ? 'cm' : 'in';
 
   useEffect(() => {
     if (!initialName) {
@@ -67,11 +64,15 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           setGender(profile.gender);
         }
         if (profile.weight) {
-          setWeight(String(profile.weight));
-          setWeightUnit(profile.weightUnit || 'kg');
+          const storedUnit = profile.weightUnit || 'kg';
+          if (storedUnit !== weightUnit) {
+            setWeight(String(convertWeight(profile.weight, storedUnit as 'kg' | 'lbs', weightUnit)));
+          } else {
+            setWeight(String(profile.weight));
+          }
         }
         if (profile.height) {
-          setHeight(String(profile.height));
+          setHeight(String(Math.round(profile.height)));
         }
         if ((profile as any).measurementSystem) {
           setMeasurementSystem((profile as any).measurementSystem);
@@ -82,6 +83,17 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const convertWeight = (value: number, fromUnit: 'kg' | 'lbs', toUnit: 'kg' | 'lbs'): number => {
+    if (fromUnit === toUnit) return value;
+    if (fromUnit === 'kg' && toUnit === 'lbs') {
+      return Math.round(value * 2.20462 * 10) / 10;
+    }
+    if (fromUnit === 'lbs' && toUnit === 'kg') {
+      return Math.round(value / 2.20462 * 10) / 10;
+    }
+    return value;
   };
 
   const handleSave = async () => {
@@ -217,40 +229,24 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         </View>
 
         <Text style={styles.label}>Your Weight ({weightUnit}) {isOnboarding ? '' : '*'}</Text>
-        <View style={styles.weightRow}>
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            value={weight}
-            onChangeText={setWeight}
-            placeholder={`Enter weight in ${weightUnit}`}
-            placeholderTextColor="#999"
-            keyboardType="decimal-pad"
-          />
-          <TouchableOpacity
-            style={styles.unitToggle}
-            onPress={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
-          >
-            <Text style={styles.unitToggleText}>{weightUnit === 'kg' ? 'lbs' : 'kg'}</Text>
-          </TouchableOpacity>
-        </View>
+        <TextInput
+          style={styles.input}
+          value={weight}
+          onChangeText={setWeight}
+          placeholder={`Enter weight in ${weightUnit}`}
+          placeholderTextColor="#999"
+          keyboardType="decimal-pad"
+        />
 
         <Text style={styles.label}>Your Height ({heightUnit}) {isOnboarding ? '' : '*'}</Text>
-        <View style={styles.weightRow}>
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            value={height}
-            onChangeText={setHeight}
-            placeholder={`Enter height in ${heightUnit}`}
-            placeholderTextColor="#999"
-            keyboardType="decimal-pad"
-          />
-          <TouchableOpacity
-            style={styles.unitToggle}
-            onPress={() => setHeightUnit(heightUnit === 'cm' ? 'in' : 'cm')}
-          >
-            <Text style={styles.unitToggleText}>{heightUnit === 'cm' ? 'in' : 'cm'}</Text>
-          </TouchableOpacity>
-        </View>
+        <TextInput
+          style={styles.input}
+          value={height}
+          onChangeText={setHeight}
+          placeholder={`Enter height in ${heightUnit}`}
+          placeholderTextColor="#999"
+          keyboardType="decimal-pad"
+        />
 
         <Text style={styles.label}>Measurement System {isOnboarding ? '' : '*'}</Text>
         <View style={styles.systemContainer}>
@@ -369,22 +365,6 @@ const styles = StyleSheet.create({
   },
   genderTextSelected: {
     color: '#1A1A1A',
-  },
-  weightRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  unitToggle: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    marginLeft: 10,
-  },
-  unitToggleText: {
-    color: '#4CAF50',
-    fontWeight: '600',
-    fontSize: 14,
   },
   systemContainer: {
     flexDirection: 'row',
