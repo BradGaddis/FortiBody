@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { FastingTimer } from '../../components/nutrition/FastingTimer';
 import { fastingService, FASTING_SPLITS, FastingSplit } from '../../services/nutrition/FastingService';
+import { getCurrentPhase, getUpcomingPhase, FASTING_PHASES, FastingPhase } from '../../utils/fastingTimeline';
 import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
 const FastingScreen: React.FC = () => {
@@ -151,6 +152,42 @@ const FastingScreen: React.FC = () => {
               A {currentSplit.label} fasting pattern is a popular approach for metabolic health. 
               Listen to your body and adjust as needed.
             </Text>
+          </View>
+
+          <View style={styles.timelineSection}>
+            <Text style={styles.timelineSectionTitle}>Fasting Timeline</Text>
+            <Text style={styles.timelineSectionSubtitle}>What happens during your fast</Text>
+            
+            {FASTING_PHASES.slice(1).map((phase, index) => {
+              const currentPhase = getCurrentPhase(currentSplit.fastingHours || 8);
+              const isCurrentPhase = phase.hours === currentPhase.hours;
+              
+              return (
+                <View 
+                  key={phase.hours} 
+                  style={[
+                    styles.timelinePhase,
+                    isCurrentPhase && styles.timelinePhaseActive
+                  ]}
+                >
+                  <View style={styles.timelinePhaseHeader}>
+                    <View style={styles.timelineTimeBadge}>
+                      <Text style={styles.timelineTimeText}>{phase.hours}h</Text>
+                    </View>
+                    <View style={styles.timelinePhaseInfo}>
+                      <Text style={styles.timelinePhaseTitle}>{phase.title}</Text>
+                      <Text style={styles.timelinePhaseDesc}>{phase.description}</Text>
+                      {isCurrentPhase && (
+                        <View style={styles.timelineCurrentBadge}>
+                          <Ionicons name="ellipse" size={8} color="#4CAF50" />
+                          <Text style={styles.timelineCurrentText}>Current Phase</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
           </View>
         </View>
         <View style={styles.bottomPadding} />
@@ -493,6 +530,83 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
+  },
+  timelineSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+  },
+  timelineSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  timelineSectionSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  timelinePhase: {
+    flexDirection: 'column',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  timelinePhaseActive: {
+    backgroundColor: '#F0FFF0',
+    marginHorizontal: -12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderBottomWidth: 0,
+    marginBottom: 12,
+    paddingBottom: 16,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  timelinePhaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  timelineTimeBadge: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 48,
+    alignItems: 'center',
+  },
+  timelineTimeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  timelinePhaseInfo: {
+    flex: 1,
+  },
+  timelinePhaseTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  timelinePhaseDesc: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  timelineCurrentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  timelineCurrentText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#4CAF50',
   },
 });
 

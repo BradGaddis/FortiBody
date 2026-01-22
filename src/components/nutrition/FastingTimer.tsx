@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fastingService, FastingStatus, FastingSplit } from '../../services/nutrition/FastingService';
+import { getCurrentPhase, getUpcomingPhase, FASTING_PHASES, FastingPhase } from '../../utils/fastingTimeline';
 
 interface FastingTimerProps {
   onStartFasting?: () => void;
@@ -16,6 +17,53 @@ interface FastingTimerProps {
   compact?: boolean;
   split?: FastingSplit;
 }
+
+const FastingTimelineSection: React.FC<{ hoursFasted: number; targetHours: number }> = ({ hoursFasted, targetHours }) => {
+  const currentPhase = getCurrentPhase(hoursFasted);
+  const nextPhase = getUpcomingPhase(hoursFasted);
+  
+  const formatHours = (hours: number) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
+  return (
+    <View style={styles.timelineSection}>
+      <View style={styles.timelineHeader}>
+        <Ionicons name="body" size={18} color="#4CAF50" />
+        <Text style={styles.timelineTitle}>What's Happening in Your Body</Text>
+      </View>
+      
+      <View style={styles.currentPhaseCard}>
+        <View style={styles.phaseIconContainer}>
+          <Ionicons name={currentPhase.icon as any} size={24} color="#4CAF50" />
+        </View>
+        <View style={styles.phaseContent}>
+          <Text style={styles.phaseTitle}>{currentPhase.title}</Text>
+          <Text style={styles.phaseDescription}>{currentPhase.description}</Text>
+          <View style={styles.benefitsRow}>
+            {currentPhase.benefits.slice(0, 2).map((benefit, idx) => (
+              <View key={idx} style={styles.benefitBadge}>
+                <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
+                <Text style={styles.benefitText}>{benefit}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {nextPhase && (
+        <View style={styles.nextPhaseRow}>
+          <View style={styles.nextPhaseIndicator}>
+            <View style={styles.nextPhaseDot} />
+            <Text style={styles.nextPhaseLabel}>Next: {nextPhase.title} at {formatHours(nextPhase.hours)}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+};
 
 export const FastingTimer: React.FC<FastingTimerProps> = ({
   onStartFasting,
@@ -199,6 +247,10 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
           <Ionicons name="information-circle-outline" size={16} color="#888" />
           <Text style={styles.indefiniteNoteText}>Fasting without a time goal</Text>
         </View>
+      )}
+
+      {fastingStatus.isFasting && !isIndefinite && (
+        <FastingTimelineSection hoursFasted={fastingStatus.hoursFasted} targetHours={fastingStatus.targetHours!} />
       )}
 
       <View style={styles.statsRow}>
@@ -411,6 +463,96 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginTop: 4,
+  },
+  timelineSection: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  timelineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  timelineTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  currentPhaseCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+  },
+  phaseIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  phaseContent: {
+    flex: 1,
+  },
+  phaseTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  phaseDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  benefitsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  benefitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  benefitText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  nextPhaseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  nextPhaseIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  nextPhaseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF9800',
+  },
+  nextPhaseLabel: {
+    fontSize: 13,
+    color: '#888',
   },
 });
 
