@@ -39,7 +39,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   const [age, setAge] = useState(initialAge);
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [weight, setWeight] = useState(initialWeight);
-  const [height, setHeight] = useState(initialHeight);
+  const [heightFeet, setHeightFeet] = useState('');
+  const [heightInches, setHeightInches] = useState('');
+  const [heightCm, setHeightCm] = useState('');
   const [measurementSystem, setMeasurementSystem] = useState<'metric' | 'imperial'>('metric');
   const [loading, setLoading] = useState(!initialName);
   const [saving, setSaving] = useState(false);
@@ -72,7 +74,15 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           }
         }
         if (profile.height) {
-          setHeight(String(Math.round(profile.height)));
+          if (measurementSystem === 'imperial') {
+            const totalInches = Math.round(profile.height / 2.54);
+            const feet = Math.floor(totalInches / 12);
+            const inches = totalInches % 12;
+            setHeightFeet(String(feet));
+            setHeightInches(String(inches));
+          } else {
+            setHeightCm(String(Math.round(profile.height)));
+          }
         }
         if ((profile as any).measurementSystem) {
           setMeasurementSystem((profile as any).measurementSystem);
@@ -96,6 +106,32 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     return value;
   };
 
+  const handleHeightInchesChange = (value: string) => {
+    setHeightInches(value);
+    
+    const totalInches = parseInt(value, 10);
+    if (!isNaN(totalInches) && totalInches > 0) {
+      if (totalInches >= 12) {
+        const feet = Math.floor(totalInches / 12);
+        const inches = totalInches % 12;
+        setHeightFeet(String(feet));
+        setHeightInches(String(inches));
+      }
+    }
+  };
+
+  const getHeightInCm = (): number => {
+    if (measurementSystem === 'metric') {
+      const cm = parseFloat(heightCm);
+      return isNaN(cm) ? 0 : cm;
+    } else {
+      const feet = parseInt(heightFeet, 10) || 0;
+      const inches = parseInt(heightInches, 10) || 0;
+      const totalInches = feet * 12 + inches;
+      return totalInches * 2.54;
+    }
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter your name');
@@ -114,8 +150,8 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       return;
     }
 
-    const heightNum = parseFloat(height);
-    if (!height || isNaN(heightNum) || heightNum < 100 || heightNum > 250) {
+    const heightNum = getHeightInCm();
+    if (heightNum < 100 || heightNum > 250) {
       Alert.alert('Error', 'Please enter a valid height');
       return;
     }
@@ -238,15 +274,42 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           keyboardType="decimal-pad"
         />
 
-        <Text style={styles.label}>Your Height ({heightUnit}) {isOnboarding ? '' : '*'}</Text>
-        <TextInput
-          style={styles.input}
-          value={height}
-          onChangeText={setHeight}
-          placeholder={`Enter height in ${heightUnit}`}
-          placeholderTextColor="#999"
-          keyboardType="decimal-pad"
-        />
+        <Text style={styles.label}>Your Height {isOnboarding ? '' : '*'}</Text>
+        {measurementSystem === 'metric' ? (
+          <TextInput
+            style={styles.input}
+            value={heightCm}
+            onChangeText={setHeightCm}
+            placeholder="Enter height in cm"
+            placeholderTextColor="#999"
+            keyboardType="decimal-pad"
+          />
+        ) : (
+          <View style={styles.heightRow}>
+            <View style={styles.heightInputContainer}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={heightFeet}
+                onChangeText={setHeightFeet}
+                placeholder="ft"
+                placeholderTextColor="#999"
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.heightUnit}>ft</Text>
+            </View>
+            <View style={styles.heightInputContainer}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={heightInches}
+                onChangeText={handleHeightInchesChange}
+                placeholder="in"
+                placeholderTextColor="#999"
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.heightUnit}>in</Text>
+            </View>
+          </View>
+        )}
 
         <Text style={styles.label}>Measurement System {isOnboarding ? '' : '*'}</Text>
         <View style={styles.systemContainer}>
@@ -396,6 +459,25 @@ const styles = StyleSheet.create({
   },
   systemTextSelected: {
     color: '#1A1A1A',
+  },
+  heightRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heightInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  heightUnit: {
+    fontSize: 14,
+    color: '#999',
+    marginLeft: 4,
   },
   saveBtn: {
     backgroundColor: '#4CAF50',
