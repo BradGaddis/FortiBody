@@ -28,6 +28,7 @@ export type MainTabParamList = {
   HomeStack: NavigatorScreenParams<HomeStackParamList>;
   ExercisesStack: NavigatorScreenParams<ExercisesStackParamList>;
   NutritionStack: NavigatorScreenParams<NutritionStackParamList>;
+  ActivityStack: NavigatorScreenParams<ActivityStackParamList>;
   SleepStack: NavigatorScreenParams<SleepStackParamList>;
   ProfileStack: NavigatorScreenParams<ProfileStackParamList>;
 };
@@ -39,6 +40,11 @@ export type HomeStackParamList = {
 
 export type SleepStackParamList = {
   Sleep: undefined;
+};
+
+export type ActivityStackParamList = {
+  Activity: undefined;
+  Integrations: undefined;
 };
 
 export type ExercisesStackParamList = {
@@ -72,6 +78,7 @@ export type ProfileStackParamList = {
   ProfileSetup: undefined;
   ProfileGoals: { profileId: string };
   ProfileMeasurements: { profileId: string };
+  Integrations: undefined;
 };
 
 export type RouteName = keyof RootStackParamList;
@@ -81,12 +88,17 @@ export const ROUTES = {
     HomeStack: 'HomeStack' as const,
     ExercisesStack: 'ExercisesStack' as const,
     NutritionStack: 'NutritionStack' as const,
+    ActivityStack: 'ActivityStack' as const,
     SleepStack: 'SleepStack' as const,
     ProfileStack: 'ProfileStack' as const,
   },
   Home: {
     Home: 'Home' as const,
     EnhancedHome: 'Enhanced Home' as const,
+  },
+  Activity: {
+    Activity: 'Activity' as const,
+    Integrations: 'Integrations' as const,
   },
   Sleep: {
     Sleep: 'Sleep' as const,
@@ -119,6 +131,7 @@ export const ROUTES = {
     ProfileEdit: 'ProfileEdit' as const,
     ProfileGoals: 'ProfileGoals' as const,
     ProfileMeasurements: 'ProfileMeasurements' as const,
+    Integrations: 'Integrations' as const,
   },
   NotFound: {
     NotFound: 'NotFound' as const,
