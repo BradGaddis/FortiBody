@@ -13,6 +13,8 @@ import {
 const FOOD_DATABASE_KEY = '@fortibody_food_database';
 const FOOD_ENTRIES_KEY = '@fortibody_food_entries';
 const NUTRITION_GOAL_KEY = '@fortibody_nutrition_goal';
+const FOOD_SEARCH_CACHE_KEY = '@fortibody_food_search_cache';
+const SEARCH_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 class NutritionService {
   private static instance: NutritionService;
@@ -176,6 +178,123 @@ class NutritionService {
     } catch (error) {
       console.error('Failed to fetch food by barcode:', error);
       return null;
+    }
+  }
+
+  async searchFoodsOnline(query: string): Promise<FoodItem[]> {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    const trimmedQuery = query.trim().toLowerCase();
+
+    try {
+      const cache = await this.getSearchCache();
+      const cachedResult = cache[trimmedQuery];
+      
+      if (cachedResult && Date.now() - cachedResult.timestamp < SEARCH_CACHE_DURATION) {
+        console.log(`🍎 Returning cached search results for: "${trimmedQuery}"`);
+        return cachedResult.foods;
+      }
+
+      console.log(`🍎 Searching Open Food Facts for: "${trimmedQuery}"`);
+      const response = await fetch(
+        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(trimmedQuery)}&search_simple=1&action=process&json=1&page_size=20`
+      );
+      
+      const data = await response.json();
+
+      if (data.products && data.products.length > 0) {
+        const foods: FoodItem[] = data.products.slice(0, 10).map((product: any) => {
+          const servingSize = product.serving_size
+            ? parseFloat(product.serving_size)
+            : 100;
+          const servingUnit = product.serving_size
+            ? product.serving_size.replace(/[\d.]/g, '').trim() || 'g'
+            : 'g';
+
+          return {
+            id: `off-${product.code || product._id || uuidv4()}`,
+            name: product.product_name || 'Unknown Product',
+            brand: product.brands || product.brands_tags?.[0] || undefined,
+            barcode: product.code,
+            servingSize: servingSize,
+            servingUnit: servingUnit,
+            calories: Math.round(
+              product.nutriments['energy-kcal_100g'] ||
+                (product.nutriments['energy-kcal'] || 0) / (servingSize / 100) ||
+                product.nutriments['energy-kcal_100g'] || 0
+            ),
+            protein:
+              product.nutriments.protein_100g || product.nutriments.protein || 0,
+            carbs:
+              product.nutriments.carbohydrates_100g ||
+              product.nutriments.carbohydrates ||
+              0,
+            fat: product.nutriments.fat_100g || product.nutriments.fat || 0,
+            fiber:
+              product.nutriments.fiber_100g ||
+              product.nutriments.fiber ||
+              undefined,
+            sugar:
+              product.nutriments.sugars_100g ||
+              product.nutriments.sugars ||
+              undefined,
+            sodium:
+              product.nutriments.sodium_100g ||
+              product.nutriments.sodium ||
+              undefined,
+            isCustom: false,
+            createdAt: new Date(),
+          };
+        }).filter((food: FoodItem) => food.calories > 0);
+
+        await this.addToSearchCache(trimmedQuery, foods);
+        return foods;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Failed to search foods online:', error);
+      return [];
+    }
+  }
+
+  private async getSearchCache(): Promise<Record<string, { timestamp: number; foods: FoodItem[] }>> {
+    try {
+      const data = await AsyncStorage.getItem(FOOD_SEARCH_CACHE_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private async addToSearchCache(query: string, foods: FoodItem[]): Promise<void> {
+    try {
+      const cache = await this.getSearchCache();
+      cache[query] = {
+        timestamp: Date.now(),
+        foods,
+      };
+      
+      const keys = Object.keys(cache);
+      if (keys.length > 100) {
+        const sortedKeys = keys.sort((a, b) => cache[a].timestamp - cache[b].timestamp);
+        const keysToRemove = sortedKeys.slice(0, keys.length - 100);
+        keysToRemove.forEach(key => delete cache[key]);
+      }
+      
+      await AsyncStorage.setItem(FOOD_SEARCH_CACHE_KEY, JSON.stringify(cache));
+    } catch (error) {
+      console.error('Failed to add to search cache:', error);
+    }
+  }
+
+  async clearSearchCache(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(FOOD_SEARCH_CACHE_KEY);
+    } catch (error) {
+      console.error('Failed to clear search cache:', error);
     }
   }
 

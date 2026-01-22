@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,10 +27,14 @@ interface AddFoodScreenProps {
   route: RouteProp<NutritionStackParamList, 'AddFood'>;
 }
 
+const SEARCH_DEBOUNCE_MS = 500;
+
 export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [foods, setFoods] = useState<FoodItem[]>([]);
+  const [onlineFoods, setOnlineFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealType>(route.params?.meal || 'breakfast');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [servings, setServings] = useState<string>('1.00');
@@ -38,6 +42,8 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   const [entryDate, setEntryDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadFoods = useCallback(async () => {
     setLoading(true);
@@ -49,6 +55,41 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   useEffect(() => {
     loadFoods();
   }, [loadFoods]);
+
+  const handleSearch = useCallback(async (query: string) => {
+    const trimmed = query.trim().toLowerCase();
+    
+    if (trimmed.length < 2) {
+      setOnlineFoods([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const results = await nutritionService.searchFoodsOnline(trimmed);
+      setOnlineFoods(results);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  const onSearchChange = (text: string) => {
+    setSearchQuery(text);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (text.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        handleSearch(text);
+      }, SEARCH_DEBOUNCE_MS);
+    } else {
+      setOnlineFoods([]);
+    }
+  };
 
   const filteredFoods = foods.filter(food =>
     food.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -133,6 +174,32 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
     }
   };
 
+  const handleSaveOnlineFood = async (food: FoodItem) => {
+    try {
+      const savedFood = await nutritionService.addFood({
+        name: food.name,
+        brand: food.brand,
+        barcode: food.barcode,
+        servingSize: food.servingSize,
+        servingUnit: food.servingUnit,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        fiber: food.fiber,
+        sugar: food.sugar,
+        sodium: food.sodium,
+      });
+      await loadFoods();
+      setSelectedFood(savedFood);
+      setOnlineFoods([]);
+      setSearchQuery('');
+      hapticSuccess();
+    } catch (error) {
+      console.error('Failed to save online food:', error);
+    }
+  };
+
   const renderMealChip = ({ id, label }: { id: MealType; label: string }) => (
     <TouchableOpacity
       key={id}
@@ -156,13 +223,16 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
         styles.foodItem,
         selectedFood?.id === item.id && styles.foodItemSelected,
       ]}
-      onPress={() => setSelectedFood(item)}
+      onPress={() => {
+        hapticSelection();
+        setSelectedFood(item);
+      }}
     >
       <View style={styles.foodInfo}>
         <Text style={styles.foodName}>{item.name}</Text>
         <Text style={styles.foodDetails}>
-          {item.calories} cal • {item.servingSize}
-          {item.servingUnit}
+          {item.calories} cal • {item.servingSize}{item.servingUnit}
+          {item.brand && ` • ${item.brand}`}
         </Text>
       </View>
       <View style={styles.foodMacros}>
@@ -186,6 +256,34 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
           </TouchableOpacity>
         </View>
       )}
+      {!item.isCustom && item.id.startsWith('off-') && (
+        <View style={styles.onlineBadge}>
+          <Ionicons name="cloud-outline" size={12} color="#4CAF50" />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderOnlineFoodItem = ({ item }: { item: FoodItem }) => (
+    <TouchableOpacity
+      style={[styles.foodItem, styles.onlineFoodItem]}
+      onPress={() => handleSaveOnlineFood(item)}
+    >
+      <View style={styles.foodInfo}>
+        <Text style={styles.foodName}>{item.name}</Text>
+        <Text style={styles.foodDetails}>
+          {item.calories} cal • {item.servingSize}{item.servingUnit}
+          {item.brand && ` • ${item.brand}`}
+        </Text>
+      </View>
+      <View style={styles.foodMacros}>
+        <Text style={styles.macroText}>P: {item.protein}g</Text>
+        <Text style={styles.macroText}>C: {item.carbs}g</Text>
+        <Text style={styles.macroText}>F: {item.fat}g</Text>
+      </View>
+      <View style={styles.saveBadge}>
+        <Ionicons name="add" size={16} color="#4CAF50" />
+      </View>
     </TouchableOpacity>
   );
 
@@ -214,16 +312,22 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
           <Ionicons name="search" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search foods..."
+            placeholder="Search or type to find foods..."
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={onSearchChange}
             placeholderTextColor="#999"
+            autoCapitalize="none"
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+          {searching ? (
+            <ActivityIndicator size="small" color="#4CAF50" />
+          ) : searchQuery.length > 0 ? (
+            <TouchableOpacity onPress={() => {
+              setSearchQuery('');
+              setOnlineFoods([]);
+            }}>
               <Ionicons name="close-circle" size={20} color="#999" />
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </View>
 
@@ -231,6 +335,31 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
         <Text style={styles.sectionLabel}>Meal</Text>
         <View style={styles.mealChips}>{MEAL_TYPES.map(renderMealChip)}</View>
       </View>
+
+      {onlineFoods.length > 0 && (
+        <View style={styles.onlineSection}>
+          <View style={styles.onlineHeader}>
+            <Ionicons name="cloud-outline" size={16} color="#4CAF50" />
+            <Text style={styles.onlineTitle}>Search Results</Text>
+            <Text style={styles.onlineSubtitle}>Tap to save to your foods</Text>
+          </View>
+          <FlatList
+            data={onlineFoods}
+            renderItem={renderOnlineFoodItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.onlineList}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
+          />
+        </View>
+      )}
+
+      {searching && (
+        <View style={styles.searchingIndicator}>
+          <ActivityIndicator size="small" color="#4CAF50" />
+          <Text style={styles.searchingText}>Searching...</Text>
+        </View>
+      )}
 
       {selectedFood ? (
         <View style={styles.selectedFoodSection}>
@@ -954,6 +1083,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+  onlineSection: {
+    backgroundColor: '#F0FFF0',
+    borderTopWidth: 1,
+    borderTopColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  onlineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  onlineTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  onlineSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    marginLeft: 'auto',
+  },
+  onlineList: {
+    paddingBottom: 8,
+  },
+  onlineFoodItem: {
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+  },
+  onlineBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchingText: {
+    fontSize: 14,
+    color: '#888',
   },
 });
 
