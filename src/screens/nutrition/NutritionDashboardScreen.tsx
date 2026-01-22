@@ -8,11 +8,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  TextInput,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutrition/NutritionService';
+import { MealType, MEAL_TYPES } from '../../services/nutrition/types';
 
 interface NutritionDashboardProps {
   navigation: any;
@@ -26,6 +25,8 @@ interface DailyEntry {
   time: string;
   servings: number;
   foodId: string;
+  date: Date;
+  mealType: MealType;
 }
 
 export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
@@ -40,9 +41,6 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
     carbs: 0,
     fat: 0,
   });
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<DailyEntry | null>(null);
-  const [servingsInput, setServingsInput] = useState('');
 
   const loadTodayData = useCallback(async () => {
     const today = new Date();
@@ -59,6 +57,8 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
       }),
       servings: entry.servings,
       foodId: entry.foodId,
+      date: new Date(entry.date),
+      mealType: entry.meal,
     }));
 
     setEntries(entryList);
@@ -102,25 +102,11 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
     ]);
   };
 
-  const openEditModal = (entry: DailyEntry) => {
-    setEditingEntry(entry);
-    setServingsInput(entry.servings.toString());
-    setEditModalVisible(true);
-  };
-
-  const saveServings = async () => {
-    if (!editingEntry) return;
-    
-    const parsedServings = parseFloat(servingsInput);
-    if (isNaN(parsedServings) || parsedServings <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid number greater than 0');
-      return;
-    }
-
-    await nutritionService.updateEntry(editingEntry.id, { servings: parsedServings });
-    setEditModalVisible(false);
-    setEditingEntry(null);
-    loadTodayData();
+  const navigateToEdit = (entry: DailyEntry) => {
+    navigation.navigate('NutritionStack', {
+      screen: 'EditFoodEntry',
+      params: { entryId: entry.id },
+    });
   };
 
   const hasData = entries.length > 0;
@@ -135,6 +121,24 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
     { label: 'Carbs', value: `${totals.carbs}g`, color: '#FF9800' },
     { label: 'Fat', value: `${totals.fat}g`, color: '#9C27B0' },
   ];
+
+  const getMealIcon = (meal: string) => {
+    switch (meal) {
+      case 'breakfast': return 'sunrise-outline';
+      case 'lunch': return 'partly-sunny-outline';
+      case 'dinner': return 'moon-outline';
+      default: return 'restaurant-outline';
+    }
+  };
+
+  const getMealColor = (meal: string) => {
+    switch (meal) {
+      case 'breakfast': return '#FF9800';
+      case 'lunch': return '#4CAF50';
+      case 'dinner': return '#3F51B5';
+      default: return '#9C27B0';
+    }
+  };
 
   if (loading) {
     return (
@@ -178,6 +182,9 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
           {hasData ? (
             entries.map(entry => (
               <View key={entry.id} style={styles.mealCard}>
+                <View style={[styles.mealIconContainer, { backgroundColor: getMealColor(entry.meal) + '20' }]}>
+                  <Ionicons name={getMealIcon(entry.meal) as any} size={20} color={getMealColor(entry.meal)} />
+                </View>
                 <View style={styles.mealInfo}>
                   <View style={styles.mealHeader}>
                     <Text style={styles.mealName}>{entry.foodName}</Text>
@@ -196,7 +203,7 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
                       style={styles.actionBtn}
-                      onPress={() => openEditModal(entry)}
+                      onPress={() => navigateToEdit(entry)}
                     >
                       <Ionicons name="create-outline" size={18} color="#666" />
                     </TouchableOpacity>
@@ -245,53 +252,6 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <Modal
-        visible={editModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Servings</Text>
-            <Text style={styles.modalSubtitle}>{editingEntry?.foodName}</Text>
-            
-            <View style={styles.servingsInputContainer}>
-              <TextInput
-                style={styles.servingsInput}
-                value={servingsInput}
-                onChangeText={setServingsInput}
-                keyboardType="decimal-pad"
-                placeholder="0.00"
-                placeholderTextColor="#999"
-              />
-              <Text style={styles.servingsUnit}>servings</Text>
-            </View>
-
-            <Text style={styles.caloriesPreview}>
-              {editingEntry && servingsInput
-                ? `${Math.round(editingEntry.calories / editingEntry.servings * parseFloat(servingsInput) || 0)} calories`
-                : ''}
-            </Text>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSaveBtn}
-                onPress={saveServings}
-              >
-                <Text style={styles.modalSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -365,12 +325,19 @@ const styles = StyleSheet.create({
   },
   mealCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
+  },
+  mealIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   mealHeader: {
     flexDirection: 'row',
@@ -451,85 +418,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
-    width: '80%',
-    maxWidth: 320,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  servingsInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  servingsInput: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    paddingVertical: 12,
-  },
-  servingsUnit: {
-    fontSize: 18,
-    color: '#666',
-  },
-  caloriesPreview: {
-    fontSize: 14,
-    color: '#4CAF50',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-  },
-  modalSaveBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#4CAF50',
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
   },
 });
 

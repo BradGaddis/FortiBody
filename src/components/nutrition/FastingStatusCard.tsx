@@ -9,7 +9,7 @@ interface FastingStatusCardProps {
 const FastingStatusCard: React.FC<FastingStatusCardProps> = ({ onPress }) => {
   return (
     <View style={styles.container}>
-      <FastingTimer compact={false} onStartFasting={onPress} />
+      <FastingTimer compact={false} onPress={onPress} />
     </View>
   );
 };

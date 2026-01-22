@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
+import { fastingService } from './FastingService';
 import {
   FoodItem,
   FoodEntry,
@@ -240,8 +241,22 @@ class NutritionService {
   async deleteEntry(id: string): Promise<void> {
     try {
       const entries = await this.getAllEntries();
+      const deletedEntry = entries.find(entry => entry.id === id);
       const filtered = entries.filter(entry => entry.id !== id);
       await AsyncStorage.setItem(FOOD_ENTRIES_KEY, JSON.stringify(filtered));
+
+      if (deletedEntry) {
+        const sortedRemaining = filtered.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        
+        if (sortedRemaining.length > 0) {
+          const newLastEntry = sortedRemaining[0];
+          await fastingService.setLastMealTime(new Date(newLastEntry.date));
+        } else {
+          await fastingService.clearLastMealTime();
+        }
+      }
     } catch (error) {
       console.error('Failed to delete entry:', error);
       throw error;
@@ -259,6 +274,13 @@ class NutritionService {
 
       entries[index] = { ...entries[index], ...updates };
       await AsyncStorage.setItem(FOOD_ENTRIES_KEY, JSON.stringify(entries));
+
+      const sortedEntries = entries.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      const lastEntry = sortedEntries[0];
+      await fastingService.setLastMealTime(new Date(lastEntry.date));
+
       return entries[index];
     } catch (error) {
       console.error('Failed to update entry:', error);

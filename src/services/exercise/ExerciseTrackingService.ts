@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
+import userStatsService from '../user/UserStatsService';
+import streakService from '../streak/StreakService';
 import {
   ExerciseSet,
   ExerciseSession,
@@ -378,6 +380,12 @@ class ExerciseTrackingService {
 
       history.push(historyEntry);
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+      // Record streak activity for workout completion
+      await streakService.recordActivity();
+
+      // Also update user stats with workout
+      await userStatsService.incrementWorkout(session.duration, session.volume);
     } catch (error) {
       console.error('Failed to add to history:', error);
       throw error;

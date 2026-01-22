@@ -7,27 +7,33 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fastingService, FastingStatus } from '../../services/nutrition/FastingService';
+import { fastingService, FastingStatus, FastingSplit } from '../../services/nutrition/FastingService';
 
 interface FastingTimerProps {
   onStartFasting?: () => void;
+  onPress?: () => void;
   onEndFasting?: () => void;
   compact?: boolean;
+  split?: FastingSplit;
 }
 
 export const FastingTimer: React.FC<FastingTimerProps> = ({
   onStartFasting,
+  onPress,
   onEndFasting,
   compact = false,
+  split,
 }) => {
   const [fastingStatus, setFastingStatus] = useState<FastingStatus | null>(null);
   const progressAnim = useRef(new Animated.Value(0));
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadFastingStatus = useCallback(async () => {
-    const status = await fastingService.getFastingStatus();
+    const status = split
+      ? await fastingService.getFastingStatus(split)
+      : await fastingService.getFastingStatus();
     setFastingStatus(status);
-  }, []);
+  }, [split]);
 
   useEffect(() => {
     loadFastingStatus();
@@ -44,7 +50,7 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
   }, [loadFastingStatus]);
 
   useEffect(() => {
-    if (fastingStatus) {
+    if (fastingStatus && !fastingStatus.isIndefinite) {
       Animated.timing(progressAnim.current, {
         toValue: fastingStatus.progress,
         duration: 500,
@@ -83,7 +89,7 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
     }
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
             <Ionicons name="restaurant-outline" size={32} color="#4CAF50" />
@@ -101,49 +107,61 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
             <Text style={styles.startButtonText}>Start Fasting</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
+  const isIndefinite = fastingStatus.isIndefinite;
+  const displaySubtitle = isIndefinite
+    ? 'No time limit - fast as long as you want'
+    : fastingStatus.isGoalReached
+      ? `${fastingStatus.targetHours}:00 goal completed`
+      : `${fastingStatus.targetHours}:00 fasting goal`;
+
+  const displayTitle = isIndefinite
+    ? '⏳ Fasting in Progress'
+    : fastingStatus.isGoalReached
+      ? '🎉 Fasting Goal Reached!'
+      : '⏳ Fasting in Progress';
+
+  const iconColor = isIndefinite ? '#4CAF50' : (fastingStatus.isGoalReached ? '#4CAF50' : '#FF9800');
+  const iconBgColor = isIndefinite ? '#E8F5E9' : (fastingStatus.isGoalReached ? '#E8F5E9' : '#FFF3E0');
+  const progressColor = isIndefinite ? '#4CAF50' : (fastingStatus.isGoalReached ? '#4CAF50' : '#FF9800');
+
   if (compact) {
     return (
-      <View style={styles.compactCard}>
+      <TouchableOpacity style={styles.compactCard} onPress={onPress} activeOpacity={0.8}>
         <Ionicons 
-          name={fastingStatus.isGoalReached ? 'checkmark-circle' : 'time-outline'} 
+          name={isIndefinite ? 'infinite' : 'time-outline'} 
           size={20} 
-          color={fastingStatus.isGoalReached ? '#4CAF50' : '#FF9800'} 
+          color={iconColor} 
         />
         <View style={styles.compactInfo}>
           <Text style={styles.compactTitle}>
-            {fastingStatus.isGoalReached ? 'Goal Reached!' : 'Fasting'}
+            {isIndefinite ? 'Fasting' : (fastingStatus.isGoalReached ? 'Goal Reached!' : 'Fasting')}
           </Text>
           <Text style={styles.compactSubtitle}>{fastingStatus.elapsedTime}</Text>
         </View>
-        <Text style={styles.compactProgress}>{fastingStatus.progress.toFixed(0)}%</Text>
-      </View>
+        {!isIndefinite && (
+          <Text style={styles.compactProgress}>{fastingStatus.progress.toFixed(0)}%</Text>
+        )}
+      </TouchableOpacity>
     );
   }
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: fastingStatus.isGoalReached ? '#E8F5E9' : '#FFF3E0' }]}>
+        <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
           <Ionicons 
-            name={fastingStatus.isGoalReached ? 'checkmark-circle' : 'time-outline'} 
+            name={isIndefinite ? 'infinite' : (fastingStatus.isGoalReached ? 'checkmark-circle' : 'time-outline')} 
             size={32} 
-            color={fastingStatus.isGoalReached ? '#4CAF50' : '#FF9800'} 
+            color={iconColor} 
           />
         </View>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>
-            {fastingStatus.isGoalReached ? '🎉 Fasting Goal Reached!' : '⏳ Fasting in Progress'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {fastingStatus.isGoalReached 
-              ? `${fastingStatus.targetHours}:00 goal completed`
-              : `${fastingStatus.targetHours}:00 fasting goal`
-            }
-          </Text>
+          <Text style={styles.title}>{displayTitle}</Text>
+          <Text style={styles.subtitle}>{displaySubtitle}</Text>
         </View>
       </View>
 
@@ -152,45 +170,68 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
         <Text style={styles.timerLabel}>Time since last meal</Text>
       </View>
 
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarBackground}>
-          <Animated.View 
-            style={[
-              styles.progressBarFill, 
-              { 
-                width: progressWidth,
-                backgroundColor: fastingStatus.isGoalReached ? '#4CAF50' : '#FF9800'
-              }
-            ]} 
-          />
+      {!isIndefinite && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBarBackground}>
+            <Animated.View 
+              style={[
+                styles.progressBarFill, 
+                { 
+                  width: progressWidth,
+                  backgroundColor: progressColor
+                }
+              ]} 
+            />
+          </View>
+          <View style={styles.progressLabels}>
+            <Text style={styles.progressText}>
+              {fastingStatus.progress.toFixed(0)}% complete
+            </Text>
+            <Text style={styles.targetText}>
+              {fastingStatus.targetHours}:00 goal
+            </Text>
+          </View>
         </View>
-        <View style={styles.progressLabels}>
-          <Text style={styles.progressText}>
-            {fastingStatus.progress.toFixed(0)}% complete
-          </Text>
-          <Text style={styles.targetText}>
-            {fastingStatus.targetHours}:00 goal
-          </Text>
+      )}
+
+      {isIndefinite && (
+        <View style={styles.indefiniteNote}>
+          <Ionicons name="information-circle-outline" size={16} color="#888" />
+          <Text style={styles.indefiniteNoteText}>Fasting without a time goal</Text>
         </View>
-      </View>
+      )}
 
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{fastingStatus.hoursFasted.toFixed(1)}h</Text>
           <Text style={styles.statLabel}>Elapsed</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{fastingStatus.targetHours - fastingStatus.hoursFasted < 0 ? '0' : (fastingStatus.targetHours - fastingStatus.hoursFasted).toFixed(1)}h</Text>
-          <Text style={styles.statLabel}>Remaining</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{fastingStatus.isGoalReached ? '✓' : '○'}</Text>
-          <Text style={styles.statLabel}>Status</Text>
-        </View>
+        {!isIndefinite ? (
+          <>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {fastingStatus.targetHours! - fastingStatus.hoursFasted < 0 ? '0' : (fastingStatus.targetHours! - fastingStatus.hoursFasted).toFixed(1)}h
+              </Text>
+              <Text style={styles.statLabel}>Remaining</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{fastingStatus.isGoalReached ? '✓' : '○'}</Text>
+              <Text style={styles.statLabel}>Status</Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>∞</Text>
+              <Text style={styles.statLabel}>No Goal</Text>
+            </View>
+          </>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -328,6 +369,20 @@ const styles = StyleSheet.create({
   },
   targetText: {
     fontSize: 13,
+    color: '#888',
+  },
+  indefiniteNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 24,
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
+  indefiniteNoteText: {
+    fontSize: 14,
     color: '#888',
   },
   statsRow: {
