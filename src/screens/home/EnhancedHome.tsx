@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,30 +14,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import BodyDiagram from '../../components/fitness/BodyDiagram';
 import FastingStatusCard from '../../components/nutrition/FastingStatusCard';
 import streakService from '../../services/streak/StreakService';
+import { nutritionService } from '../../services/nutrition/NutritionService';
+import { DEFAULT_NUTRITION_GOAL } from '../../services/nutrition/types';
 import UserProfileService from '../../services/user/UserProfileService';
-import { hapticSelection, hapticMedium } from '../../utils/haptics';
+import { hapticSelection } from '../../utils/haptics';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const EnhancedHomeScreen = () => {
   const navigation = useNavigation();
   const [streak, setStreak] = useState<number>(0);
-  const [totalWorkouts, setTotalWorkouts] = useState<number>(0);
   const [userName, setUserName] = useState<string>('Athlete');
+  const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
+  const [calorieGoal, setCalorieGoal] = useState<number>(2000);
+  const [caloriesRemaining, setCaloriesRemaining] = useState<number>(2000);
 
   const loadDashboardData = useCallback(async () => {
     try {
-      const [streakData, workoutsData] = await Promise.all([
-        streakService.getCurrentStreak(),
-        AsyncStorage.getItem('@total_workouts'),
-      ]);
-
+      const streakData = await streakService.getCurrentStreak();
       setStreak(streakData);
-      setTotalWorkouts(parseInt(workoutsData || '0'));
 
       const profileService = new UserProfileService();
       const profile = await profileService.getActiveProfile();
       setUserName(profile?.name || 'Athlete');
+
+      try {
+        const todayNutrition = await nutritionService.getDailyNutrition(new Date());
+        setCaloriesConsumed(todayNutrition.totalCalories);
+      } catch {
+        setCaloriesConsumed(0);
+      }
+
+      try {
+        const goal = await nutritionService.getNutritionGoal();
+        const goalCalories = goal?.dailyCalories || DEFAULT_NUTRITION_GOAL.dailyCalories;
+        setCalorieGoal(goalCalories);
+        setCaloriesRemaining(Math.max(0, goalCalories - caloriesConsumed));
+      } catch {
+        setCalorieGoal(DEFAULT_NUTRITION_GOAL.dailyCalories);
+        setCaloriesRemaining(DEFAULT_NUTRITION_GOAL.dailyCalories - caloriesConsumed);
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
@@ -54,21 +70,11 @@ const EnhancedHomeScreen = () => {
   );
 
   const getStreakColor = () => {
-    if (streak >= 30) return '#FF6B6B'; // Gold
-    if (streak >= 14) return '#C0C0C0'; // Silver
-    if (streak >= 7) return '#CD7F32'; // Bronze
-    return '#666666'; // Default
+    if (streak >= 30) return '#FF6B6B';
+    if (streak >= 14) return '#C0C0C0';
+    if (streak >= 7) return '#CD7F32';
+    return '#666666';
   };
-
-  const getLevel = () => {
-    if (totalWorkouts >= 100) return { rank: 'Elite', color: '#FF6B6B' };
-    if (totalWorkouts >= 50) return { rank: 'Advanced', color: '#C0C0C0' };
-    if (totalWorkouts >= 25) return { rank: 'Intermediate', color: '#CD7F32' };
-    if (totalWorkouts >= 10) return { rank: 'Beginner', color: '#28a745' };
-    return { rank: 'Novice', color: '#6c757d' };
-  };
-
-  const level = getLevel();
 
   const handleMuscleSelect = (muscleGroups: string[]) => {
     if (muscleGroups.length > 0) {
@@ -87,25 +93,46 @@ const EnhancedHomeScreen = () => {
     </View>
   );
 
-  const renderStatsCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>📊 Your Stats</Text>
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: level.color }]}>
-            {totalWorkouts}
-          </Text>
-          <Text style={styles.statLabel}>Total Workouts</Text>
+  const renderCaloriesRemaining = () => {
+    const isUnderGoal = caloriesRemaining > 0;
+    const remainingColor = isUnderGoal ? '#4CAF50' : '#FF6B6B';
+    const remainingText = isUnderGoal ? 'remaining' : 'over goal';
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🍎 Calories Today</Text>
+        <View style={styles.caloriesContent}>
+          <View style={styles.caloriesMain}>
+            <Text style={[styles.caloriesNumber, { color: remainingColor }]}>
+              {caloriesRemaining}
+            </Text>
+            <Text style={styles.caloriesLabel}>{remainingText}</Text>
+          </View>
+          <View style={styles.caloriesDetails}>
+            <View style={styles.calorieRow}>
+              <Text style={styles.calorieLabel}>Consumed</Text>
+              <Text style={styles.calorieValue}>{caloriesConsumed}</Text>
+            </View>
+            <View style={styles.calorieRow}>
+              <Text style={styles.calorieLabel}>Goal</Text>
+              <Text style={styles.calorieValue}>{calorieGoal}</Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: level.color }]}>
-            {level.rank}
-          </Text>
-          <Text style={styles.statLabel}>Current Level</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.addFoodButton}
+          onPress={() => {
+            hapticSelection();
+            (navigation as any).navigate('NutritionStack', {
+              screen: 'AddFood',
+            });
+          }}
+        >
+          <Text style={styles.addFoodText}>+ Add Food</Text>
+        </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderQuickActions = () => (
     <View style={styles.quickActions}>
@@ -147,7 +174,6 @@ const EnhancedHomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.greeting}>Welcome back, {userName}!</Text>
         <Text style={styles.subtitle}>Ready to crush your goals today?</Text>
@@ -155,14 +181,14 @@ const EnhancedHomeScreen = () => {
 
       <ScrollView style={styles.content}>
         {renderStreakCard()}
-        {renderStatsCard()}
-        
+        {renderCaloriesRemaining()}
+
         <FastingStatusCard onPress={() => {
           (navigation as any).navigate('NutritionStack', {
             screen: 'Fasting',
           });
         }} />
-        
+
         <View style={styles.bodyDiagramCard}>
           <Text style={styles.cardTitle}>🎯 Quick Access</Text>
           <Text style={styles.cardSubtitle}>Tap a muscle group to find exercises</Text>
@@ -229,22 +255,54 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  statsContainer: {
+  caloriesContent: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
-  statItem: {
+  caloriesMain: {
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 24,
+  caloriesNumber: {
+    fontSize: 48,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
-  statLabel: {
+  caloriesLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
+  },
+  caloriesDetails: {
+    alignItems: 'flex-end',
+  },
+  calorieRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  calorieLabel: {
     fontSize: 14,
     color: '#666',
-    marginTop: 5,
+    width: 80,
+    textAlign: 'right',
+    marginRight: 10,
+  },
+  calorieValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  addFoodButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  addFoodText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
   quickActions: {
     flexDirection: 'row',
