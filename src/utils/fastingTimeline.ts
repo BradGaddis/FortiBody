@@ -47,7 +47,7 @@ export const FASTING_PHASES: FastingPhase[] = [
     title: 'Deep Ketosis',
     description: 'Your body is efficiently burning fat for fuel.',
     benefits: ['Peak fat burning', 'Increased energy', 'Appetite suppressed'],
-    icon: 'fitness',
+    icon: 'fitness-center',
   },
   {
     hours: 24,
@@ -61,7 +61,7 @@ export const FASTING_PHASES: FastingPhase[] = [
     title: 'Deep Autophagy',
     description: 'Significant cellular cleanup and renewal is occurring.',
     benefits: ['Autophagy at 30%', 'Cellular regeneration', 'Reduced inflammation'],
-    icon: 'heart-circle',
+    icon: 'heart-circle-outline',
   },
   {
     hours: 48,
@@ -75,7 +75,7 @@ export const FASTING_PHASES: FastingPhase[] = [
     title: 'Complete Renewal',
     description: 'Full immune system reset and deep cellular renewal.',
     benefits: ['Autophagy at 83%', 'Immune system reset', 'Deep cellular repair'],
-    icon: 'infinite',
+    icon: 'infinite-outline',
   },
 ];
 

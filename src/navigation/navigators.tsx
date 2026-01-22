@@ -86,7 +86,7 @@ const MainTabNavigator: React.FC = () => (
         let iconName: any = 'home';
         switch (route.name) {
           case 'HomeStack': iconName = focused ? 'home' : 'home-outline'; break;
-          case 'ExercisesStack': iconName = focused ? 'fitness' : 'fitness-outline'; break;
+          case 'ExercisesStack': iconName = focused ? 'fitness-center' : 'fitness-center-outline'; break;
           case 'NutritionStack': iconName = focused ? 'restaurant' : 'restaurant-outline'; break;
           case 'SleepStack': iconName = focused ? 'moon' : 'moon-outline'; break;
         }
