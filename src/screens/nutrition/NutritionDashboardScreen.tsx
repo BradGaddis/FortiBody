@@ -127,7 +127,7 @@ export const NutritionDashboardScreen: React.FC<NutritionDashboardProps> = ({
 
   const getMealIcon = (meal: string) => {
     switch (meal) {
-      case 'breakfast': return 'sunrise';
+      case 'breakfast': return 'cafe';
       case 'lunch': return 'sunny';
       case 'dinner': return 'moon';
       default: return 'restaurant';

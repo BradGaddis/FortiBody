@@ -24,6 +24,8 @@ const FastingScreen: React.FC = () => {
   const [restartTime, setRestartTime] = useState(new Date());
   const [isFasting, setIsFasting] = useState(false);
   const [originalCustomHours, setOriginalCustomHours] = useState<number | null>(null);
+  const [originalLastMealTime, setOriginalLastMealTime] = useState<Date | null>(null);
+  const [currentHoursFasted, setCurrentHoursFasted] = useState(0);
 
   useEffect(() => {
     loadSplit();
@@ -33,6 +35,10 @@ const FastingScreen: React.FC = () => {
   const checkFastingStatus = async () => {
     const status = await fastingService.getFastingStatus();
     setIsFasting(status.isFasting);
+    setCurrentHoursFasted(status.hoursFasted);
+    if (status.lastMealTime && !originalLastMealTime) {
+      setOriginalLastMealTime(status.lastMealTime);
+    }
   };
 
   const loadSplit = async () => {
@@ -182,15 +188,24 @@ const FastingScreen: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#666" />
           </TouchableOpacity>
 
-          <FastingTimer split={currentSplit} onRestart={handleRestartFast} />
+          <FastingTimer split={currentSplit} />
 
           {isFasting && (
+            <TouchableOpacity
+              style={styles.restartFastBtn}
+              onPress={handleRestartFast}
+            >
+              <Ionicons name="refresh-outline" size={18} color="#4CAF50" />
+              <Text style={styles.restartFastBtnText}>Restart Fast</Text>
+            </TouchableOpacity>
+          )}
+
+          {isFasting && originalLastMealTime && (
             <TouchableOpacity
               style={styles.deleteRestartBtn}
               onPress={async () => {
                 hapticSelection();
-                await fastingService.clearLastMealTime();
-                await fastingService.recordMeal();
+                await fastingService.setLastMealTime(originalLastMealTime);
                 checkFastingStatus();
               }}
             >
@@ -205,12 +220,6 @@ const FastingScreen: React.FC = () => {
                 <Ionicons name="create-outline" size={18} color="#4CAF50" />
                 <Text style={styles.editButtonText}>Edit Duration</Text>
               </TouchableOpacity>
-              {originalCustomHours !== null && (
-                <TouchableOpacity style={styles.resetButton} onPress={handleResetCustom}>
-                  <Ionicons name="return-down-back-outline" size={18} color="#FF9800" />
-                  <Text style={styles.resetButtonText}>Reset</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
 
@@ -249,7 +258,7 @@ const FastingScreen: React.FC = () => {
             <Text style={styles.timelineSectionSubtitle}>What happens during your fast</Text>
             
             {FASTING_PHASES.slice(1).map((phase, index) => {
-              const currentPhase = getCurrentPhase(currentSplit.fastingHours || 8);
+              const currentPhase = getCurrentPhase(currentHoursFasted);
               const isCurrentPhase = phase.hours === currentPhase.hours;
               
               return (
@@ -471,13 +480,12 @@ const FastingScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.restartActionButtons}>
+            <View style={styles.customButtons}>
               <TouchableOpacity
-                style={styles.restartDeleteBtn}
-                onPress={handleRestartNow}
+                style={styles.customCancelBtn}
+                onPress={() => setShowRestartModal(false)}
               >
-                <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
-                <Text style={styles.restartDeleteText}>Delete</Text>
+                <Text style={styles.customCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.customSaveBtn}
@@ -914,26 +922,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginHorizontal: 8,
   },
-  restartActionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  restartDeleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFEBEE',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 8,
-    flex: 1,
-  },
-  restartDeleteText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6B6B',
-  },
   deleteRestartBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -948,6 +936,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FF6B6B',
+  },
+  restartFastBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 12,
+    gap: 8,
+  },
+  restartFastBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
 });
 

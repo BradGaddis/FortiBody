@@ -20,8 +20,8 @@ import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptic
 
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { CommonActions } from '@react-navigation/native';
 import { NutritionStackParamList } from '../../navigation/routes';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface AddFoodScreenProps {
   navigation: StackNavigationProp<NutritionStackParamList, 'AddFood'>;
@@ -29,6 +29,37 @@ interface AddFoodScreenProps {
 }
 
 const SEARCH_DEBOUNCE_MS = 500;
+
+const useHoldToRepeat = (callback: () => void, interval: number = 100) => {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const start = useCallback(() => {
+    callback();
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(callback, interval);
+    }, 500);
+  }, [callback, interval]);
+
+  const stop = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
+
+  return { onPressIn: start, onPressOut: stop, onLongPress: stop };
+};
 
 export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,11 +69,12 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   const [searching, setSearching] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealType>(route.params?.meal || 'breakfast');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempTime, setTempTime] = useState(new Date());
   const [servings, setServings] = useState<string>('1.00');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [entryDate, setEntryDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,6 +88,12 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   useEffect(() => {
     loadFoods();
   }, [loadFoods]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFoods();
+    }, [loadFoods])
+  );
 
   const handleSearch = useCallback(async (query: string) => {
     const trimmed = query.trim().toLowerCase();
@@ -115,30 +153,25 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
       return;
     }
 
-    console.log('Saving food entry...', { foodId: selectedFood.id, meal: selectedMeal, servings: parsedServings });
-    
-    try {
-      hapticSuccess();
-      const entry = await nutritionService.addFoodEntry({
-        foodId: selectedFood.id,
-        food: selectedFood,
-        servings: parsedServings,
-        meal: selectedMeal,
-        date: entryDate,
-      });
-      console.log('Entry saved:', entry.id);
-
-      await fastingService.recordMeal();
-      await streakService.recordActivity();
-      setConfirmModalVisible(false);
-      console.log('Navigating back...');
-      navigation.dispatch((state: any) => {
-        const routes = state.routes.filter((r: any) => r.name !== 'AddFood');
-        return CommonActions.reset({
-          index: routes.length - 1,
-          routes,
+      console.log('Saving food entry...', { foodId: selectedFood.id, meal: selectedMeal, servings: parsedServings, entryDate: entryDate.toISOString() });
+      
+      try {
+        hapticSuccess();
+        const entry = await nutritionService.addFoodEntry({
+          foodId: selectedFood.id,
+          food: selectedFood,
+          servings: parsedServings,
+          meal: selectedMeal,
+          date: entryDate,
         });
-      });
+        console.log('Entry saved:', entry.id, 'entry.date:', entry.date.toISOString());
+
+        await fastingService.recordMeal(entryDate);
+        console.log('Fasting timer set to entry time:', entryDate.toISOString());
+        
+        await streakService.recordActivity();
+      setConfirmModalVisible(false);
+      navigation.goBack();
     } catch (error) {
       console.error('Failed to save entry:', error);
     }
@@ -170,11 +203,16 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
     setEntryDate(newDate);
   };
 
-  const adjustTime = (minutes: number) => {
+  const adjustTime = useCallback((minutes: number) => {
     const newDate = new Date(entryDate);
     newDate.setMinutes(newDate.getMinutes() + minutes);
     setEntryDate(newDate);
-  };
+  }, [entryDate]);
+
+  const adjustTimeForward = useHoldToRepeat(() => adjustTime(1));
+  const adjustTimeBackward = useHoldToRepeat(() => adjustTime(-1));
+  const adjustDateForward = useHoldToRepeat(() => adjustDate(1));
+  const adjustDateBackward = useHoldToRepeat(() => adjustDate(-1));
 
   const handleEditFood = (food: FoodItem) => {
     navigation.navigate('EditFood', { foodId: food.id });
@@ -315,160 +353,165 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Add Food</Text>
-        <Text style={styles.subtitle}>
-          {foods.length === 0 
-            ? 'Create or scan foods to get started'
-            : 'Select a food to add to your log'
-          }
-        </Text>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search or type to find foods..."
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-          />
-          {searching ? (
-            <ActivityIndicator size="small" color="#4CAF50" />
-          ) : searchQuery.length > 0 ? (
-            <TouchableOpacity onPress={() => {
-              setSearchQuery('');
-              setOnlineFoods([]);
-            }}>
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          ) : null}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Add Food</Text>
+          <Text style={styles.subtitle}>
+            {foods.length === 0 
+              ? 'Create or scan foods to get started'
+              : 'Select a food to add to your log'
+            }
+          </Text>
         </View>
-      </View>
 
-      <View style={styles.mealSelector}>
-        <Text style={styles.sectionLabel}>Meal</Text>
-        <View style={styles.mealChips}>{MEAL_TYPES.map(renderMealChip)}</View>
-      </View>
-
-      {onlineFoods.length > 0 && (
-        <View style={styles.onlineSection}>
-          <View style={styles.onlineHeader}>
-            <Ionicons name="cloud-outline" size={16} color="#4CAF50" />
-            <Text style={styles.onlineTitle}>Search Results</Text>
-            <Text style={styles.onlineSubtitle}>Tap to save to your foods</Text>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color="#999" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search or type to find foods..."
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+            />
+            {searching ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => {
+                setSearchQuery('');
+                setOnlineFoods([]);
+              }}>
+                <Ionicons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            ) : null}
           </View>
-          <FlatList
-            data={onlineFoods}
-            renderItem={renderOnlineFoodItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.onlineList}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-          />
         </View>
-      )}
 
-      {searching && (
-        <View style={styles.searchingIndicator}>
-          <ActivityIndicator size="small" color="#4CAF50" />
-          <Text style={styles.searchingText}>Searching...</Text>
+        <View style={styles.mealSelector}>
+          <Text style={styles.sectionLabel}>Meal</Text>
+          <View style={styles.mealChips}>{MEAL_TYPES.map(renderMealChip)}</View>
         </View>
-      )}
 
-      {selectedFood ? (
-        <View style={styles.selectedFoodSection}>
-          <View style={styles.selectedFoodCard}>
-            <View style={styles.selectedFoodHeader}>
-              <Text style={styles.selectedFoodName}>{selectedFood.name}</Text>
-              <TouchableOpacity onPress={() => setSelectedFood(null)}>
-                <Ionicons name="close-circle" size={24} color="#999" />
+        {onlineFoods.length > 0 && (
+          <View style={styles.onlineSection}>
+            <View style={styles.onlineHeader}>
+              <Ionicons name="cloud-outline" size={16} color="#4CAF50" />
+              <Text style={styles.onlineTitle}>Search Results</Text>
+              <Text style={styles.onlineSubtitle}>Tap to save to your foods</Text>
+            </View>
+            <FlatList
+              data={onlineFoods}
+              renderItem={renderOnlineFoodItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.onlineList}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
+          </View>
+        )}
+
+        {searching && (
+          <View style={styles.searchingIndicator}>
+            <ActivityIndicator size="small" color="#4CAF50" />
+            <Text style={styles.searchingText}>Searching...</Text>
+          </View>
+        )}
+
+        {selectedFood ? (
+          <View style={styles.selectedFoodSection}>
+            <View style={styles.selectedFoodCard}>
+              <View style={styles.selectedFoodHeader}>
+                <Text style={styles.selectedFoodName}>{selectedFood.name}</Text>
+                <TouchableOpacity onPress={() => setSelectedFood(null)}>
+                  <Ionicons name="close-circle" size={24} color="#999" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.selectedFoodCalories}>
+                {Math.round(selectedFood.calories * getServingsValue())} calories
+              </Text>
+              <View style={styles.servingsControl}>
+                <Text style={styles.servingsLabel}>Servings:</Text>
+                <TextInput
+                  style={styles.servingsInput}
+                  value={servings}
+                  onChangeText={setServings}
+                  keyboardType="decimal-pad"
+                  placeholder="1.00"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <View style={styles.servingsPresets}>
+                {['0.25', '0.5', '1', '1.5', '2'].map(preset => (
+                  <TouchableOpacity
+                    key={preset}
+                    style={[
+                      styles.presetBtn,
+                      servings === preset && styles.presetBtnActive,
+                    ]}
+                    onPress={() => setServings(preset)}
+                  >
+                    <Text
+                      style={[
+                        styles.presetText,
+                        servings === preset && styles.presetTextActive,
+                      ]}
+                    >
+                      {preset}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity style={styles.addButton} onPress={handleAddFoodClick}>
+                <Ionicons name="add-circle" size={20} color="#FFF" />
+                <Text style={styles.addButtonText}>
+                  Add to {MEAL_TYPES.find(m => m.id === selectedMeal)?.label}
+                </Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.selectedFoodCalories}>
-              {Math.round(selectedFood.calories * getServingsValue())} calories
-            </Text>
-            <View style={styles.servingsControl}>
-              <Text style={styles.servingsLabel}>Servings:</Text>
-              <TextInput
-                style={styles.servingsInput}
-                value={servings}
-                onChangeText={setServings}
-                keyboardType="decimal-pad"
-                placeholder="1.00"
-                placeholderTextColor="#999"
-              />
-            </View>
-            <View style={styles.servingsPresets}>
-              {['0.25', '0.5', '1', '1.5', '2'].map(preset => (
-                <TouchableOpacity
-                  key={preset}
-                  style={[
-                    styles.presetBtn,
-                    servings === preset && styles.presetBtnActive,
-                  ]}
-                  onPress={() => setServings(preset)}
-                >
-                  <Text
-                    style={[
-                      styles.presetText,
-                      servings === preset && styles.presetTextActive,
-                    ]}
-                  >
-                    {preset}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddFoodClick}>
-              <Ionicons name="add-circle" size={20} color="#FFF" />
-              <Text style={styles.addButtonText}>
-                Add to {MEAL_TYPES.find(m => m.id === selectedMeal)?.label}
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      ) : (
-        <>
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('BarcodeScanner')}
-            >
-              <Ionicons name="barcode-outline" size={24} color="#4CAF50" />
-              <Text style={styles.quickActionText}>Scan Barcode</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('CreateFood')}
-            >
-              <Ionicons name="create-outline" size={24} color="#4CAF50" />
-              <Text style={styles.quickActionText}>Create Food</Text>
-            </TouchableOpacity>
-          </View>
+        ) : (
+          <>
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.quickActionBtn}
+                onPress={() => navigation.navigate('BarcodeScanner')}
+              >
+                <Ionicons name="barcode-outline" size={24} color="#4CAF50" />
+                <Text style={styles.quickActionText}>Scan Barcode</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickActionBtn}
+                onPress={() => navigation.navigate('CreateFood')}
+              >
+                <Ionicons name="create-outline" size={24} color="#4CAF50" />
+                <Text style={styles.quickActionText}>Create Food</Text>
+              </TouchableOpacity>
+            </View>
 
-          {foods.length > 0 && (
-            <Text style={styles.sectionLabel}>My Foods</Text>
-          )}
-          <FlatList
-            data={filteredFoods}
-            renderItem={renderFoodItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.foodList}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Ionicons name="restaurant-outline" size={48} color="#CCC" />
-                <Text style={styles.emptyText}>No foods yet</Text>
-                <Text style={styles.emptySubtext}>Create or scan your first food</Text>
-              </View>
-            }
-          />
-        </>
-      )}
+            {foods.length > 0 && (
+              <Text style={styles.sectionLabel}>My Foods</Text>
+            )}
+            <FlatList
+              data={filteredFoods}
+              renderItem={renderFoodItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.foodList}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="restaurant-outline" size={48} color="#CCC" />
+                  <Text style={styles.emptyText}>No foods yet</Text>
+                  <Text style={styles.emptySubtext}>Create or scan your first food</Text>
+                </View>
+              }
+            />
+          </>
+        )}
+
+        <View style={styles.bottomPadding} />
+      </ScrollView>
 
       <Modal
         visible={confirmModalVisible}
@@ -554,38 +597,50 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
 
               <Text style={styles.confirmLabel}>Date & Time</Text>
               <View style={styles.confirmDateTimeCard}>
-                <View style={styles.confirmDateRow}>
-                  <TouchableOpacity
-                    style={styles.confirmDateBtn}
-                    onPress={() => adjustDate(-1)}
-                  >
-                    <Ionicons name="chevron-back" size={20} color="#4CAF50" />
-                  </TouchableOpacity>
-                  <View style={styles.confirmDateDisplay}>
-                    <Ionicons name="calendar-outline" size={18} color="#666" />
-                    <Text style={styles.confirmDateText}>{formatDate(entryDate)}</Text>
+                  <View style={styles.confirmDateRow}>
+                    <TouchableOpacity
+                      style={styles.confirmDateBtn}
+                      {...adjustDateBackward}
+                    >
+                      <Ionicons name="chevron-back" size={20} color="#4CAF50" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmDateDisplay}
+                      onPress={() => {
+                        setTempTime(entryDate);
+                        setShowDatePicker(true);
+                      }}
+                    >
+                      <Ionicons name="calendar-outline" size={18} color="#666" />
+                      <Text style={styles.confirmDateText}>{formatDate(entryDate)}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmDateBtn}
+                      {...adjustDateForward}
+                    >
+                      <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.confirmDateBtn}
-                    onPress={() => adjustDate(1)}
-                  >
-                    <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
-                  </TouchableOpacity>
-                </View>
                 <View style={styles.confirmTimeRow}>
                   <TouchableOpacity
                     style={styles.confirmTimeBtn}
-                    onPress={() => adjustTime(-15)}
+                    {...adjustTimeBackward}
                   >
                     <Ionicons name="chevron-back" size={20} color="#4CAF50" />
                   </TouchableOpacity>
-                  <View style={styles.confirmTimeDisplay}>
+                  <TouchableOpacity
+                    style={styles.confirmTimeDisplay}
+                    onPress={() => {
+                      setTempTime(entryDate);
+                      setShowTimePicker(true);
+                    }}
+                  >
                     <Ionicons name="time-outline" size={18} color="#666" />
                     <Text style={styles.confirmTimeText}>{formatTime(entryDate)}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.confirmTimeBtn}
-                    onPress={() => adjustTime(15)}
+                    {...adjustTimeForward}
                   >
                     <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
                   </TouchableOpacity>
@@ -613,6 +668,153 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
               >
                 <Ionicons name="checkmark-circle" size={24} color="#FFF" />
                 <Text style={styles.modalSaveText}>Save Entry</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.timePickerContent}>
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Select Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.timePickerWheelRow}>
+              <ScrollView style={styles.timePickerWheel}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <TouchableOpacity
+                    key={h}
+                    style={[
+                      styles.timePickerItem,
+                      tempTime.getHours() === h && styles.timePickerItemSelected,
+                    ]}
+                    onPress={() => {
+                      const newDate = new Date(entryDate);
+                      newDate.setHours(h, tempTime.getMinutes());
+                      setTempTime(newDate);
+                    }}
+                  >
+                    <Text style={[
+                      styles.timePickerItemText,
+                      tempTime.getHours() === h && styles.timePickerItemTextSelected,
+                    ]}>
+                      {h.toString().padStart(2, '0')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <Text style={styles.timePickerSeparator}>:</Text>
+              <ScrollView style={styles.timePickerWheel}>
+                {Array.from({ length: 60 }, (_, m) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[
+                      styles.timePickerItem,
+                      tempTime.getMinutes() === m && styles.timePickerItemSelected,
+                    ]}
+                    onPress={() => {
+                      const newDate = new Date(entryDate);
+                      newDate.setHours(tempTime.getHours(), m);
+                      setTempTime(newDate);
+                    }}
+                  >
+                    <Text style={[
+                      styles.timePickerItemText,
+                      tempTime.getMinutes() === m && styles.timePickerItemTextSelected,
+                    ]}>
+                      {m.toString().padStart(2, '0')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={styles.timePickerCancelBtn}
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.timePickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timePickerConfirmBtn}
+                onPress={() => {
+                  setEntryDate(tempTime);
+                  setShowTimePicker(false);
+                }}
+              >
+                <Text style={styles.timePickerConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.timePickerContent}>
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.datePickerWheelRow}>
+              <ScrollView style={styles.datePickerWheel}>
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - 3 + i);
+                  const isSelected = entryDate.toDateString() === date.toDateString();
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.datePickerItem,
+                        isSelected && styles.datePickerItemSelected,
+                      ]}
+                      onPress={() => {
+                        const newDate = new Date(entryDate);
+                        newDate.setFullYear(date.getFullYear());
+                        newDate.setMonth(date.getMonth());
+                        newDate.setDate(date.getDate());
+                        setEntryDate(newDate);
+                        setShowDatePicker(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.datePickerItemText,
+                        isSelected && styles.datePickerItemTextSelected,
+                      ]}>
+                        {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={styles.timePickerCancelBtn}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.timePickerCancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1020,6 +1222,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
   },
   confirmDateText: {
     fontSize: 16,
@@ -1158,6 +1364,114 @@ const styles = StyleSheet.create({
   searchingText: {
     fontSize: 14,
     color: '#888',
+  },
+  bottomPadding: {
+    height: 40,
+  },
+  timePickerContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '85%',
+    maxWidth: 350,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  timePickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  timePickerWheelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+  },
+  timePickerWheel: {
+    height: 200,
+    flex: 1,
+  },
+  timePickerItem: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timePickerItemSelected: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+  },
+  timePickerItemText: {
+    fontSize: 20,
+    color: '#888',
+  },
+  timePickerItemTextSelected: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  timePickerSeparator: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#666',
+    marginHorizontal: 8,
+  },
+  timePickerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  timePickerCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  timePickerCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  timePickerConfirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+  },
+  timePickerConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  datePickerWheelRow: {
+    height: 180,
+  },
+  datePickerWheel: {
+    height: 180,
+  },
+  datePickerItem: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerItemSelected: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+  },
+  datePickerItemText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  datePickerItemTextSelected: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
 });
 

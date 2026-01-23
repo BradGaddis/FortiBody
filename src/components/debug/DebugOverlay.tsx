@@ -108,7 +108,7 @@ export const DebugOverlay: React.FC = () => {
 
   const handleResetOnboarding = async (): Promise<void> => {
     try {
-      console.log('🔄 Starting onboarding reset...');
+      console.log('🔄 Starting full data reset...');
       
       const keysToRemove = [
         '@user_profile',
@@ -123,6 +123,10 @@ export const DebugOverlay: React.FC = () => {
         '@exercise_unit_',
         '@nutrition_log',
         '@fasting_start_time',
+        '@last_meal_time',
+        '@fortibody_food_database',
+        '@fortibody_food_entries',
+        '@fasting_split',
       ];
       
       // Clear all keys
@@ -137,7 +141,7 @@ export const DebugOverlay: React.FC = () => {
       
       Alert.alert(
         'Reset Complete! 🎉',
-        'All user data has been cleared.\n\nPlease force close and restart the app to see onboarding.\n\nDouble-tap back or swipe away to close.',
+        'All user data cleared including:\n• Fasting timer\n• Food entries\n• Streak data\n\nPlease force close and restart the app.',
         [{ 
           text: 'Got it!',
           onPress: () => {

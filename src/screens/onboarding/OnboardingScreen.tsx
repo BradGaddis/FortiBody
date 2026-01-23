@@ -101,10 +101,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         console.log('🧪 Onboarding saved to AsyncStorage');
         await onComplete?.();
         console.log('🧪 onComplete callback done');
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
         return;
       }
     } catch (error) {
@@ -142,10 +138,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       await updateOnboardingData({ name: name.trim(), age });
       await setOnboardingComplete();
       await onComplete?.();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
       return;
     }
     

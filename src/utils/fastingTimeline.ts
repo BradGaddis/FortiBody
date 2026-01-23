@@ -47,7 +47,7 @@ export const FASTING_PHASES: FastingPhase[] = [
     title: 'Deep Ketosis',
     description: 'Your body is efficiently burning fat for fuel.',
     benefits: ['Peak fat burning', 'Increased energy', 'Appetite suppressed'],
-    icon: 'fitness-center',
+    icon: 'barbell',
   },
   {
     hours: 24,

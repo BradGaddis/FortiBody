@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,37 @@ import { hapticSelection, hapticSuccess, hapticError, hapticMedium } from '../..
 
 type EditFoodEntryRouteProp = RouteProp<NutritionStackParamList, 'EditFoodEntry'>;
 
+const useHoldToRepeat = (callback: () => void, interval: number = 100) => {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const start = useCallback(() => {
+    callback();
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(callback, interval);
+    }, 500);
+  }, [callback, interval]);
+
+  const stop = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
+
+  return { onPressIn: start, onPressOut: stop, onLongPress: stop };
+};
+
 export const EditFoodEntryScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<EditFoodEntryRouteProp>();
@@ -32,7 +63,9 @@ export const EditFoodEntryScreen: React.FC = () => {
   const [servings, setServings] = useState('1');
   const [selectedMeal, setSelectedMeal] = useState<MealType>('breakfast');
   const [entryDate, setEntryDate] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempTime, setTempTime] = useState(new Date());
 
   useEffect(() => {
     loadEntry();
@@ -84,11 +117,16 @@ export const EditFoodEntryScreen: React.FC = () => {
     setEntryDate(newDate);
   };
 
-  const adjustTime = (minutes: number) => {
+  const adjustTime = useCallback((minutes: number) => {
     const newDate = new Date(entryDate);
     newDate.setMinutes(newDate.getMinutes() + minutes);
     setEntryDate(newDate);
-  };
+  }, [entryDate]);
+
+  const adjustTimeForward = useHoldToRepeat(() => adjustTime(1));
+  const adjustTimeBackward = useHoldToRepeat(() => adjustTime(-1));
+  const adjustDateForward = useHoldToRepeat(() => adjustDate(1));
+  const adjustDateBackward = useHoldToRepeat(() => adjustDate(-1));
 
   const handleSave = async () => {
     if (!entry) return;
@@ -230,27 +268,39 @@ export const EditFoodEntryScreen: React.FC = () => {
           
           <View style={styles.dateTimeCard}>
             <View style={styles.dateRow}>
-              <TouchableOpacity style={styles.dateBtn} onPress={() => adjustDate(-1)}>
+              <TouchableOpacity style={styles.dateBtn} {...adjustDateBackward}>
                 <Ionicons name="chevron-back" size={20} color="#4CAF50" />
               </TouchableOpacity>
-              <View style={styles.dateDisplay}>
+              <TouchableOpacity
+                style={styles.dateDisplay}
+                onPress={() => {
+                  setTempTime(entryDate);
+                  setShowDatePicker(true);
+                }}
+              >
                 <Ionicons name="calendar-outline" size={18} color="#666" />
                 <Text style={styles.dateText}>{formatDate(entryDate)}</Text>
-              </View>
-              <TouchableOpacity style={styles.dateBtn} onPress={() => adjustDate(1)}>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dateBtn} {...adjustDateForward}>
                 <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
               </TouchableOpacity>
             </View>
             
             <View style={styles.timeRow}>
-              <TouchableOpacity style={styles.timeBtn} onPress={() => adjustTime(-15)}>
+              <TouchableOpacity style={styles.timeBtn} {...adjustTimeBackward}>
                 <Ionicons name="chevron-back" size={20} color="#4CAF50" />
               </TouchableOpacity>
-              <View style={styles.timeDisplay}>
+              <TouchableOpacity
+                style={styles.timeDisplay}
+                onPress={() => {
+                  setTempTime(entryDate);
+                  setShowTimePicker(true);
+                }}
+              >
                 <Ionicons name="time-outline" size={18} color="#666" />
                 <Text style={styles.timeText}>{formatTime(entryDate)}</Text>
-              </View>
-              <TouchableOpacity style={styles.timeBtn} onPress={() => adjustTime(15)}>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.timeBtn} {...adjustTimeForward}>
                 <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
               </TouchableOpacity>
             </View>
@@ -299,6 +349,153 @@ export const EditFoodEntryScreen: React.FC = () => {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.timePickerContent}>
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Select Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.timePickerWheelRow}>
+              <ScrollView style={styles.timePickerWheel}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <TouchableOpacity
+                    key={h}
+                    style={[
+                      styles.timePickerItem,
+                      tempTime.getHours() === h && styles.timePickerItemSelected,
+                    ]}
+                    onPress={() => {
+                      const newDate = new Date(entryDate);
+                      newDate.setHours(h, tempTime.getMinutes());
+                      setTempTime(newDate);
+                    }}
+                  >
+                    <Text style={[
+                      styles.timePickerItemText,
+                      tempTime.getHours() === h && styles.timePickerItemTextSelected,
+                    ]}>
+                      {h.toString().padStart(2, '0')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <Text style={styles.timePickerSeparator}>:</Text>
+              <ScrollView style={styles.timePickerWheel}>
+                {Array.from({ length: 60 }, (_, m) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[
+                      styles.timePickerItem,
+                      tempTime.getMinutes() === m && styles.timePickerItemSelected,
+                    ]}
+                    onPress={() => {
+                      const newDate = new Date(entryDate);
+                      newDate.setHours(tempTime.getHours(), m);
+                      setTempTime(newDate);
+                    }}
+                  >
+                    <Text style={[
+                      styles.timePickerItemText,
+                      tempTime.getMinutes() === m && styles.timePickerItemTextSelected,
+                    ]}>
+                      {m.toString().padStart(2, '0')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={styles.timePickerCancelBtn}
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.timePickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timePickerConfirmBtn}
+                onPress={() => {
+                  setEntryDate(tempTime);
+                  setShowTimePicker(false);
+                }}
+              >
+                <Text style={styles.timePickerConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.timePickerContent}>
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.datePickerWheelRow}>
+              <ScrollView style={styles.datePickerWheel}>
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - 3 + i);
+                  const isSelected = entryDate.toDateString() === date.toDateString();
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.datePickerItem,
+                        isSelected && styles.datePickerItemSelected,
+                      ]}
+                      onPress={() => {
+                        const newDate = new Date(entryDate);
+                        newDate.setFullYear(date.getFullYear());
+                        newDate.setMonth(date.getMonth());
+                        newDate.setDate(date.getDate());
+                        setEntryDate(newDate);
+                        setShowDatePicker(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.datePickerItemText,
+                        isSelected && styles.datePickerItemTextSelected,
+                      ]}>
+                        {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity
+                style={styles.timePickerCancelBtn}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.timePickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -439,6 +636,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
   },
   dateText: {
     fontSize: 16,
@@ -520,6 +721,117 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timePickerContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '85%',
+    maxWidth: 350,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  timePickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  timePickerWheelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+  },
+  timePickerWheel: {
+    height: 200,
+    flex: 1,
+  },
+  timePickerItem: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timePickerItemSelected: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+  },
+  timePickerItemText: {
+    fontSize: 20,
+    color: '#888',
+  },
+  timePickerItemTextSelected: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  timePickerSeparator: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#666',
+    marginHorizontal: 8,
+  },
+  timePickerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  timePickerCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  timePickerCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  timePickerConfirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+  },
+  timePickerConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  datePickerWheelRow: {
+    height: 180,
+  },
+  datePickerWheel: {
+    height: 180,
+  },
+  datePickerItem: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerItemSelected: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+  },
+  datePickerItemText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  datePickerItemTextSelected: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
 });
 

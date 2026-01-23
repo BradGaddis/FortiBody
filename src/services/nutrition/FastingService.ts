@@ -84,8 +84,9 @@ class FastingService {
     return null;
   }
 
-  async setLastMealTime(date: Date = new Date()): Promise<void> {
+  async setLastMealTime(date: Date): Promise<void> {
     try {
+      console.log('[FastingService] setLastMealTime:', date.toISOString());
       await AsyncStorage.setItem(LAST_MEAL_KEY, date.toISOString());
     } catch (error) {
       console.error('Error setting last meal time:', error);
@@ -184,7 +185,12 @@ class FastingService {
 
     const now = new Date();
     const diff = now.getTime() - lastMealTime.getTime();
-    const hoursFasted = diff / (1000 * 60 * 60);
+    
+    if (diff < 0) {
+      console.warn('[FastingService] Last meal time is in the future:', lastMealTime.toISOString(), 'now:', now.toISOString());
+    }
+    
+    const hoursFasted = Math.max(0, diff / (1000 * 60 * 60));
     const minutesFasted = (hoursFasted % 1) * 60;
     const secondsFasted = ((minutesFasted % 1) * 60);
     
@@ -238,8 +244,18 @@ class FastingService {
     return FASTING_SPLITS[0];
   }
 
-  async recordMeal(): Promise<void> {
-    await this.setLastMealTime(new Date());
+  async recordMostRecentMeal(entries: { date: Date }[]): Promise<void> {
+    if (entries.length === 0) return;
+    
+    const mostRecent = entries.reduce((max, entry) => 
+      entry.date.getTime() > max.getTime() ? entry.date : max
+    , entries[0].date);
+    
+    await this.setLastMealTime(mostRecent);
+  }
+
+  async recordMeal(date: Date = new Date()): Promise<void> {
+    await this.setLastMealTime(date);
   }
 
   async endFasting(): Promise<void> {

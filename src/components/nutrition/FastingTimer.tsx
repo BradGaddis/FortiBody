@@ -22,7 +22,15 @@ const FastingTimelineSection: React.FC<FastingTimelineSectionProps> = ({ hoursFa
   const formatHours = (hours: number) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    return `${h}:${m.toString().padStart(2, '0')}`;
+  };
+
+  const formatTimeRemaining = (hoursFasted: number, targetHours: number) => {
+    const remaining = targetHours - hoursFasted;
+    if (remaining <= 0) return 'Now';
+    const h = Math.floor(remaining);
+    const m = Math.round((remaining - h) * 60);
+    return `in ${h}h ${m}m`;
   };
 
   return (
@@ -54,7 +62,9 @@ const FastingTimelineSection: React.FC<FastingTimelineSectionProps> = ({ hoursFa
         <View style={styles.nextPhaseRow}>
           <View style={styles.nextPhaseIndicator}>
             <View style={styles.nextPhaseDot} />
-            <Text style={styles.nextPhaseLabel}>Next: {nextPhase.title} at {formatHours(nextPhase.hours)}</Text>
+            <Text style={styles.nextPhaseLabel}>
+              Next: {nextPhase.title} {formatTimeRemaining(hoursFasted, nextPhase.hours)}
+            </Text>
           </View>
         </View>
       )}
@@ -68,7 +78,6 @@ interface FastingTimerProps {
   onEndFasting?: () => void;
   compact?: boolean;
   split?: FastingSplit;
-  onRestart?: () => void;
 }
 
 export const FastingTimer: React.FC<FastingTimerProps> = ({
@@ -77,7 +86,6 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
   onEndFasting,
   compact = false,
   split,
-  onRestart,
 }) => {
   const [fastingStatus, setFastingStatus] = useState<FastingStatus | null>(null);
   const progressAnim = useRef(new Animated.Value(0));
@@ -260,9 +268,9 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
         <FastingTimelineSection hoursFasted={fastingStatus.hoursFasted} targetHours={fastingStatus.targetHours!} />
       )}
 
-      <View style={styles.statsRow}>
+        <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{fastingStatus.hoursFasted.toFixed(1)}h</Text>
+          <Text style={styles.statValue}>{Math.max(0, fastingStatus.hoursFasted).toFixed(1)}h</Text>
           <Text style={styles.statLabel}>Elapsed</Text>
         </View>
         {!isIndefinite ? (
@@ -270,7 +278,7 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                {fastingStatus.targetHours! - fastingStatus.hoursFasted < 0 ? '0' : (fastingStatus.targetHours! - fastingStatus.hoursFasted).toFixed(1)}h
+                {Math.max(0, fastingStatus.targetHours! - fastingStatus.hoursFasted).toFixed(1)}h
               </Text>
               <Text style={styles.statLabel}>Remaining</Text>
             </View>
@@ -288,17 +296,8 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
               <Text style={styles.statLabel}>No Goal</Text>
             </View>
           </>
-        )}
+          )}
       </View>
-
-      {fastingStatus.isFasting && (
-        <View style={styles.customActions}>
-          <TouchableOpacity style={styles.restartButton} onPress={onRestart}>
-            <Ionicons name="refresh-outline" size={18} color="#4CAF50" />
-            <Text style={styles.restartButtonText}>Restart Fast</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </TouchableOpacity>
   );
 };

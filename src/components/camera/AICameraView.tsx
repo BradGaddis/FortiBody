@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Line, G } from 'react-native-svg';
 import type { Pose, Keypoint, FormFeedback, RepState } from '../../types/pose';
@@ -96,17 +96,27 @@ const AICameraView: React.FC<AICameraViewProps> = ({
 }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [manualOverride, setManualOverride] = useState(0);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      if (!permission) {
+        const { status } = await requestPermission();
+        setHasPermission(status === 'granted');
+      } else {
+        setHasPermission(permission.status === 'granted');
+      }
     })();
-  }, []);
+  }, [permission, requestPermission]);
 
   useEffect(() => {
     setManualOverride(0);
   }, [exercise]);
+
+  const toggleCameraFacing = () => {
+    setCameraFacing(prev => prev === 'front' ? 'back' : 'front');
+  };
 
   const handleAddRep = useCallback(() => {
     setManualOverride(prev => prev + 1);
@@ -151,31 +161,35 @@ const AICameraView: React.FC<AICameraViewProps> = ({
 
   return (
     <View style={styles.container}>
-      <Camera style={styles.camera} type={1}>
-        <View style={styles.overlay}>
-          {pose && pose.keypoints && (
-            <Svg
-              width={SCREEN_WIDTH}
-              height={350}
-              viewBox={`0 0 ${SCREEN_WIDTH} 350`}
-              style={styles.skeletonSvg}
-            >
-              {renderSkeleton(pose.keypoints, 1, 1)}
-            </Svg>
-          )}
+      <CameraView style={styles.camera} facing={cameraFacing} />
+      
+      <View style={styles.overlay}>
+        {pose && pose.keypoints && (
+          <Svg
+            width={SCREEN_WIDTH}
+            height={350}
+            viewBox={`0 0 ${SCREEN_WIDTH} 350`}
+            style={styles.skeletonSvg}
+          >
+            {renderSkeleton(pose.keypoints, 1, 1)}
+          </Svg>
+        )}
 
-          {!pose && isActive && (
-            <View style={styles.noPoseOverlay}>
-              <Ionicons name="person" size={48} color="#FFF" />
-              <Text style={styles.noPoseText}>Position yourself in frame</Text>
-            </View>
-          )}
-        </View>
-      </Camera>
+        {!pose && isActive && (
+          <View style={styles.noPoseOverlay}>
+            <Ionicons name="person" size={48} color="#FFF" />
+            <Text style={styles.noPoseText}>Position yourself in frame</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.controls}>
         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
           <Ionicons name="close" size={24} color="#FFF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.flipBtn} onPress={toggleCameraFacing}>
+          <Ionicons name="camera-reverse" size={24} color="#FFF" />
         </TouchableOpacity>
 
         <View style={styles.headerRow}>
@@ -295,7 +309,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -346,6 +364,18 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  flipBtn: {
+    position: 'absolute',
+    top: -60,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   headerRow: {
     flexDirection: 'row',

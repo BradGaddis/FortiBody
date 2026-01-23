@@ -65,16 +65,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         if (profile.gender && (profile.gender === 'male' || profile.gender === 'female')) {
           setGender(profile.gender);
         }
+        setMeasurementSystem((profile as any).measurementSystem || 'metric');
         if (profile.weight) {
-          const storedUnit = profile.weightUnit || 'kg';
-          if (storedUnit !== weightUnit) {
-            setWeight(String(convertWeight(profile.weight, storedUnit as 'kg' | 'lbs', weightUnit)));
-          } else {
-            setWeight(String(profile.weight));
-          }
+          setWeight(String(profile.weight));
         }
         if (profile.height) {
-          if (measurementSystem === 'imperial') {
+          if ((profile as any).measurementSystem === 'imperial') {
             const totalInches = Math.round(profile.height / 2.54);
             const feet = Math.floor(totalInches / 12);
             const inches = totalInches % 12;
@@ -83,9 +79,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           } else {
             setHeightCm(String(Math.round(profile.height)));
           }
-        }
-        if ((profile as any).measurementSystem) {
-          setMeasurementSystem((profile as any).measurementSystem);
         }
       }
     } catch (error) {
@@ -145,6 +138,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     }
 
     const weightNum = parseFloat(weight);
+    console.log('[ProfileForm] Weight validation:', { rawWeight: weight, parsed: weightNum, isValid: !isNaN(weightNum) && weightNum >= 20 && weightNum <= 300 });
     if (!weight || isNaN(weightNum) || weightNum < 20 || weightNum > 300) {
       Alert.alert('Error', 'Please enter a valid weight');
       return;
@@ -160,6 +154,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     try {
       const profileService = new UserProfileService();
       const existingProfile = await profileService.getActiveProfile();
+      console.log('[ProfileForm] Existing profile:', existingProfile);
       
       await profileService.saveProfile({
         id: existingProfile?.id || 'active',
@@ -168,7 +163,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
         gender: gender,
         height: heightNum,
         weight: weightNum,
-        weightUnit: weightUnit,
+        weightUnit: existingProfile?.weightUnit || weightUnit,
         measurementSystem: measurementSystem,
         activityLevel: existingProfile?.activityLevel || 2,
         goals: existingProfile?.goals || [],

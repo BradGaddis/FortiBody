@@ -74,13 +74,13 @@ const BODY_MEASUREMENTS_KEY = '@body_measurements';
 class UserProfileService {
   async saveProfile(profile: Omit<UserProfile, 'id'> & { id?: string }): Promise<void> {
     try {
-      console.log('💾 saveProfile - Saving profile:', profile.name, profile.age);
+      console.log('💾 saveProfile - Input profile:', JSON.stringify(profile));
       const profiles = await this.getProfiles();
+      console.log('💾 saveProfile - Existing profiles before save:', JSON.stringify(profiles));
       const profileId = profile.id || 'active';
-      console.log('💾 saveProfile - Filtering out existing profile with id:', profileId);
       const updatedProfiles = profiles.filter(p => p.id !== profileId);
       updatedProfiles.push({ ...profile, id: profileId } as UserProfile);
-      console.log('💾 saveProfile - Final profiles:', JSON.stringify(updatedProfiles));
+      console.log('💾 saveProfile - Profiles to save:', JSON.stringify(updatedProfiles));
 
       await AsyncStorage.setItem(
         USER_PROFILE_KEY,
