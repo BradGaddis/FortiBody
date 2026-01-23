@@ -16,3 +16,7 @@ web-build/
 android/
 
 *.md
+
+# Build outputs
+*.apk
+build-*.apk
