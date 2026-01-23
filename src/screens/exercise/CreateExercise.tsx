@@ -7,9 +7,9 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  SafeAreaView,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Exercise } from '@/services/exercise/exerciseLibrary';
 

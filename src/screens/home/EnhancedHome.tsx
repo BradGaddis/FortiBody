@@ -6,8 +6,8 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,8 +26,8 @@ const EnhancedHomeScreen = () => {
   const [streak, setStreak] = useState<number>(0);
   const [userName, setUserName] = useState<string>('Athlete');
   const [caloriesConsumed, setCaloriesConsumed] = useState<number>(0);
-  const [calorieGoal, setCalorieGoal] = useState<number>(2000);
-  const [caloriesRemaining, setCaloriesRemaining] = useState<number>(2000);
+  const [calorieGoal, setCalorieGoal] = useState<number>(0);
+  const [caloriesRemaining, setCaloriesRemaining] = useState<number>(0);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -36,6 +36,7 @@ const EnhancedHomeScreen = () => {
 
       const profileService = new UserProfileService();
       const profile = await profileService.getActiveProfile();
+      console.log('Profile loaded:', profile?.name, 'age:', profile?.age, 'gender:', profile?.gender, 'height:', profile?.height, 'weight:', profile?.weight, 'activity:', profile?.activityLevel);
       setUserName(profile?.name || 'Athlete');
 
       try {
@@ -45,15 +46,31 @@ const EnhancedHomeScreen = () => {
         setCaloriesConsumed(0);
       }
 
+      let goalCalories = DEFAULT_NUTRITION_GOAL.dailyCalories;
+      console.log('Initial goalCalories:', goalCalories);
+
       try {
         const goal = await nutritionService.getNutritionGoal();
-        const goalCalories = goal?.dailyCalories || DEFAULT_NUTRITION_GOAL.dailyCalories;
-        setCalorieGoal(goalCalories);
-        setCaloriesRemaining(Math.max(0, goalCalories - caloriesConsumed));
-      } catch {
-        setCalorieGoal(DEFAULT_NUTRITION_GOAL.dailyCalories);
-        setCaloriesRemaining(DEFAULT_NUTRITION_GOAL.dailyCalories - caloriesConsumed);
+        const hasUserSetGoal = goal?.dailyCalories && goal.id !== 'default';
+        console.log('Saved goal:', goal, 'hasUserSetGoal:', hasUserSetGoal);
+        
+        if (hasUserSetGoal) {
+          goalCalories = goal.dailyCalories;
+        } else if (profile && profile.age && profile.gender && profile.height && profile.weight && profile.activityLevel) {
+          goalCalories = profileService.calculateTDEE(profile);
+          console.log('Using TDEE calculated goal:', goalCalories);
+        }
+      } catch (error) {
+        console.log('Error getting goal:', error);
+        if (profile && profile.age && profile.gender && profile.height && profile.weight && profile.activityLevel) {
+          goalCalories = profileService.calculateTDEE(profile);
+          console.log('Using TDEE after error:', goalCalories);
+        }
       }
+
+      console.log('Final goalCalories:', goalCalories);
+      setCalorieGoal(goalCalories);
+      setCaloriesRemaining(Math.max(0, goalCalories - caloriesConsumed));
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }

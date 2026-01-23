@@ -6,11 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  SafeAreaView,
   ActivityIndicator,
   Modal,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { fastingService } from '../../services/nutrition/FastingService';
@@ -20,6 +20,7 @@ import { hapticSelection, hapticSuccess, hapticMedium } from '../../utils/haptic
 
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { CommonActions } from '@react-navigation/native';
 import { NutritionStackParamList } from '../../navigation/routes';
 
 interface AddFoodScreenProps {
@@ -102,7 +103,10 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
   };
 
   const handleConfirmSave = async () => {
-    if (!selectedFood) return;
+    if (!selectedFood) {
+      console.log('No food selected');
+      return;
+    }
 
     const parsedServings = parseFloat(servings);
     if (isNaN(parsedServings) || parsedServings <= 0) {
@@ -111,19 +115,33 @@ export const AddFoodScreen: React.FC<AddFoodScreenProps> = ({ navigation, route 
       return;
     }
 
-    hapticSuccess();
-    await nutritionService.addFoodEntry({
-      foodId: selectedFood.id,
-      food: selectedFood,
-      servings: parsedServings,
-      meal: selectedMeal,
-      date: entryDate,
-    });
+    console.log('Saving food entry...', { foodId: selectedFood.id, meal: selectedMeal, servings: parsedServings });
+    
+    try {
+      hapticSuccess();
+      const entry = await nutritionService.addFoodEntry({
+        foodId: selectedFood.id,
+        food: selectedFood,
+        servings: parsedServings,
+        meal: selectedMeal,
+        date: entryDate,
+      });
+      console.log('Entry saved:', entry.id);
 
-    await fastingService.recordMeal();
-    await streakService.recordActivity();
-    setConfirmModalVisible(false);
-    navigation.goBack();
+      await fastingService.recordMeal();
+      await streakService.recordActivity();
+      setConfirmModalVisible(false);
+      console.log('Navigating back...');
+      navigation.dispatch((state: any) => {
+        const routes = state.routes.filter((r: any) => r.name !== 'AddFood');
+        return CommonActions.reset({
+          index: routes.length - 1,
+          routes,
+        });
+      });
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+    }
   };
 
   const getServingsValue = () => {

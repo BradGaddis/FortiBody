@@ -100,9 +100,12 @@ class NutritionService {
     };
 
     try {
+      console.log('Saving entry to storage...');
       const entries = await this.getAllEntries();
+      console.log('Current entries count:', entries.length);
       entries.push(newEntry);
       await AsyncStorage.setItem(FOOD_ENTRIES_KEY, JSON.stringify(entries));
+      console.log('Entry saved successfully');
       
       // Also save the food to the database for future use
       const database = await this.getFoodDatabase();

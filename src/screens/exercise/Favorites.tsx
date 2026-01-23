@@ -4,9 +4,9 @@ import {
   Text, 
   TouchableOpacity, 
   StyleSheet,
-  SafeAreaView,
   ScrollView 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getExercisesByCategory, Exercise } from '../../services/exercise/exerciseLibrary';
 

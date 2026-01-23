@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList, MainTabParamList, HomeStackParamList, ExercisesStackParamList, NutritionStackParamList, SleepStackParamList, ActivityStackParamList } from './routes';
 import { screenOptions } from './config';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
@@ -87,35 +89,119 @@ const ProfileStackNavigator: React.FC = () => (
   </Stack.Navigator>
 );
 
-const MainTabNavigator: React.FC = () => (
-  <MainTab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName: any = 'home';
-        switch (route.name) {
-          case 'HomeStack': iconName = focused ? 'home' : 'home-outline'; break;
-          case 'ExercisesStack': iconName = focused ? 'barbell' : 'barbell-outline'; break;
-          case 'NutritionStack': iconName = focused ? 'restaurant' : 'restaurant-outline'; break;
-          case 'ActivityStack': iconName = focused ? 'body' : 'body-outline'; break;
-          case 'SleepStack': iconName = focused ? 'moon' : 'moon-outline'; break;
-        }
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#4CAF50',
-      tabBarInactiveTintColor: '#9E9E9E',
-      tabBarStyle: { backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#EEEEEE', paddingBottom: 5, paddingTop: 5, height: 60 },
-      tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
-      headerShown: false,
-    })}
-  >
-    <MainTab.Screen name="HomeStack" component={HomeStackNavigator} options={{ title: 'Home', headerShown: false }} />
-    <MainTab.Screen name="ExercisesStack" component={ExercisesStackNavigator} options={{ title: 'Exercises', headerShown: false }} />
-    <MainTab.Screen name="NutritionStack" component={NutritionStackNavigator} options={{ title: 'Nutrition', headerShown: false }} />
-    <MainTab.Screen name="ActivityStack" component={ActivityStackNavigator} options={{ title: 'Activity', headerShown: false }} />
-    <MainTab.Screen name="SleepStack" component={SleepStackNavigator} options={{ title: 'Sleep', headerShown: false }} />
-    <MainTab.Screen name="ProfileStack" component={ProfileStackNavigator} options={{ title: 'Profile', headerShown: false }} />
-  </MainTab.Navigator>
-);
+type TabRouteName = 'HomeStack' | 'ExercisesStack' | 'NutritionStack' | 'ActivityStack' | 'SleepStack' | 'ProfileStack';
+
+const TabBarIcon: React.FC<{
+  routeName: TabRouteName;
+  focused: boolean;
+  color: string;
+  size: number;
+}> = ({ routeName, focused, color, size }) => {
+  const navigation = useNavigation<any>();
+  
+  const getIconName = () => {
+    switch (routeName) {
+      case 'HomeStack': return focused ? 'home' : 'home-outline';
+      case 'ExercisesStack': return focused ? 'barbell' : 'barbell-outline';
+      case 'NutritionStack': return focused ? 'restaurant' : 'restaurant-outline';
+      case 'ActivityStack': return focused ? 'body' : 'body-outline';
+      case 'SleepStack': return focused ? 'moon' : 'moon-outline';
+      case 'ProfileStack': return focused ? 'person' : 'person-outline';
+      default: return 'home';
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={() => {
+        navigation.navigate(routeName);
+      }}
+    >
+      <Ionicons name={getIconName() as any} size={size} color={color} />
+    </TouchableOpacity>
+  );
+};
+
+const MainTabNavigator: React.FC = () => {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <MainTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          return <TabBarIcon routeName={route.name as TabRouteName} focused={focused} color={color} size={size} />;
+        },
+        tabBarActiveTintColor: '#4CAF50',
+        tabBarInactiveTintColor: '#9E9E9E',
+        tabBarStyle: { 
+          backgroundColor: '#FFFFFF', 
+          borderTopWidth: 1, 
+          borderTopColor: '#EEEEEE', 
+          paddingTop: 8, 
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 5,
+        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
+        headerShown: false,
+      })}
+      >
+      <MainTab.Screen 
+        name="HomeStack" 
+        component={HomeStackNavigator} 
+        options={{ 
+          title: 'Home', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+      <MainTab.Screen 
+        name="ExercisesStack" 
+        component={ExercisesStackNavigator} 
+        options={{ 
+          title: 'Exercises', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+      <MainTab.Screen 
+        name="NutritionStack" 
+        component={NutritionStackNavigator} 
+        options={{ 
+          title: 'Nutrition', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+      <MainTab.Screen 
+        name="ActivityStack" 
+        component={ActivityStackNavigator} 
+        options={{ 
+          title: 'Activity', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+      <MainTab.Screen 
+        name="SleepStack" 
+        component={SleepStackNavigator} 
+        options={{ 
+          title: 'Sleep', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+      <MainTab.Screen 
+        name="ProfileStack" 
+        component={ProfileStackNavigator} 
+        options={{ 
+          title: 'Profile', 
+          headerShown: false,
+          unmountOnBlur: true,
+        }} 
+      />
+    </MainTab.Navigator>
+  );
+};
 
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>

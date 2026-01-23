@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Modal,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FastingTimer } from '../../components/nutrition/FastingTimer';
 import { fastingService, FASTING_SPLITS, FastingSplit } from '../../services/nutrition/FastingService';
@@ -20,10 +20,20 @@ const FastingScreen: React.FC = () => {
   const [customHours, setCustomHours] = useState('16');
   const [showSplitPicker, setShowSplitPicker] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [showRestartModal, setShowRestartModal] = useState(false);
+  const [restartTime, setRestartTime] = useState(new Date());
+  const [isFasting, setIsFasting] = useState(false);
+  const [originalCustomHours, setOriginalCustomHours] = useState<number | null>(null);
 
   useEffect(() => {
     loadSplit();
+    checkFastingStatus();
   }, []);
+
+  const checkFastingStatus = async () => {
+    const status = await fastingService.getFastingStatus();
+    setIsFasting(status.isFasting);
+  };
 
   const loadSplit = async () => {
     const split = await fastingService.getFastingSplit();
@@ -31,6 +41,7 @@ const FastingScreen: React.FC = () => {
     if (split.id === 'custom') {
       const hours = await fastingService.getCustomHours();
       setCustomHours(hours === null ? '' : hours.toString());
+      setOriginalCustomHours(hours);
     } else if (split.id === 'indefinite') {
       setCustomHours('');
     }
@@ -49,6 +60,65 @@ const FastingScreen: React.FC = () => {
       await fastingService.setFastingSplit(split);
       setCurrentSplit(split);
       setShowSplitPicker(false);
+    }
+  };
+
+  const getSplitDescription = (split: FastingSplit) => {
+    if (split.id === 'indefinite') {
+      return 'Fast without a time limit';
+    }
+    if (split.id === 'custom') {
+      if (split.fastingHours === null) {
+        return 'Fast without a time limit';
+      }
+      return `${split.fastingHours} hours fasting`;
+    }
+    return split.description;
+  };
+
+  const getSplitLabel = (split: FastingSplit) => {
+    if (split.id === 'custom') {
+      return 'Custom';
+    }
+    return split.label;
+  };
+
+  const handleRestartFast = () => {
+    hapticSelection();
+    setRestartTime(new Date());
+    setShowRestartModal(true);
+  };
+
+  const handleRestartNow = async () => {
+    hapticSuccess();
+    await fastingService.recordMeal();
+    setShowRestartModal(false);
+    checkFastingStatus();
+  };
+
+  const handleRestartAtTime = async () => {
+    hapticSuccess();
+    await fastingService.setLastMealTime(restartTime);
+    setShowRestartModal(false);
+    checkFastingStatus();
+  };
+
+  const handleEditCustom = () => {
+    setShowCustomModal(true);
+  };
+
+  const handleResetCustom = async () => {
+    hapticSelection();
+    if (originalCustomHours !== null) {
+      await fastingService.setCustomHours(originalCustomHours);
+      setCustomHours(originalCustomHours.toString());
+      const updatedSplit: FastingSplit = {
+        ...currentSplit,
+        fastingHours: originalCustomHours,
+        label: `${originalCustomHours}:${(24 - originalCustomHours).toString().padStart(2, '0')}`,
+        description: `${originalCustomHours} hours fasting`,
+      };
+      setCurrentSplit(updatedSplit);
     }
   };
 
@@ -87,16 +157,6 @@ const FastingScreen: React.FC = () => {
     setShowCustomModal(false);
   };
 
-  const getSplitDescription = (split: FastingSplit) => {
-    if (split.id === 'indefinite') {
-      return 'Fast without a time limit';
-    }
-    if (split.id === 'custom') {
-      return split.fastingHours === null ? 'Fast without a time limit' : `${split.fastingHours} hours fasting`;
-    }
-    return split.description;
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -116,13 +176,43 @@ const FastingScreen: React.FC = () => {
           >
             <View style={styles.splitInfo}>
               <Text style={styles.splitLabel}>Fasting Split</Text>
-              <Text style={styles.splitValue}>{currentSplit.label}</Text>
+              <Text style={styles.splitValue}>{getSplitLabel(currentSplit)}</Text>
               <Text style={styles.splitDescription}>{getSplitDescription(currentSplit)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#666" />
           </TouchableOpacity>
 
-          <FastingTimer split={currentSplit} />
+          <FastingTimer split={currentSplit} onRestart={handleRestartFast} />
+
+          {isFasting && (
+            <TouchableOpacity
+              style={styles.deleteRestartBtn}
+              onPress={async () => {
+                hapticSelection();
+                await fastingService.clearLastMealTime();
+                await fastingService.recordMeal();
+                checkFastingStatus();
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+              <Text style={styles.deleteRestartText}>Delete Custom Time</Text>
+            </TouchableOpacity>
+          )}
+
+          {currentSplit.id === 'custom' && isFasting && (
+            <View style={styles.customActions}>
+              <TouchableOpacity style={styles.editButton} onPress={handleEditCustom}>
+                <Ionicons name="create-outline" size={18} color="#4CAF50" />
+                <Text style={styles.editButtonText}>Edit Duration</Text>
+              </TouchableOpacity>
+              {originalCustomHours !== null && (
+                <TouchableOpacity style={styles.resetButton} onPress={handleResetCustom}>
+                  <Ionicons name="return-down-back-outline" size={18} color="#FF9800" />
+                  <Text style={styles.resetButtonText}>Reset</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <View style={styles.infoSection}>
             <Text style={styles.infoTitle}>How it works</Text>
@@ -224,7 +314,7 @@ const FastingScreen: React.FC = () => {
                         currentSplit.id === split.id && styles.splitOptionLabelActive,
                       ]}
                     >
-                      {split.label}
+                      {split.id === 'custom' ? 'Custom' : split.label}
                     </Text>
                     <Text
                       style={[
@@ -232,7 +322,9 @@ const FastingScreen: React.FC = () => {
                         currentSplit.id === split.id && styles.splitOptionDescActive,
                       ]}
                     >
-                      {split.description}
+                      {split.id === 'custom' 
+                        ? (split.fastingHours ? `${split.fastingHours} hours` : 'Custom duration')
+                        : split.description}
                     </Text>
                   </View>
                   {currentSplit.id === split.id && (
@@ -284,6 +376,114 @@ const FastingScreen: React.FC = () => {
                 onPress={handleCustomSave}
               >
                 <Text style={styles.customSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showRestartModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRestartModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModalContent}>
+            <Text style={styles.customModalTitle}>Restart Fast</Text>
+            <Text style={styles.customModalSubtitle}>
+              When did you have your last meal?
+            </Text>
+
+            <View style={styles.restartTimeDisplay}>
+              <Text style={styles.restartTimeLabel}>Last meal time:</Text>
+              <Text style={styles.restartTimeValue}>
+                {restartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+
+            <View style={styles.timePresetButtons}>
+              <TouchableOpacity
+                style={styles.timePresetBtn}
+                onPress={() => setRestartTime(new Date())}
+              >
+                <Text style={styles.timePresetBtnText}>Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timePresetBtn}
+                onPress={() => {
+                  const d = new Date();
+                  d.setHours(d.getHours() - 1);
+                  setRestartTime(d);
+                }}
+              >
+                <Text style={styles.timePresetBtnText}>1h ago</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timePresetBtn}
+                onPress={() => {
+                  const d = new Date();
+                  d.setHours(d.getHours() - 2);
+                  setRestartTime(d);
+                }}
+              >
+                <Text style={styles.timePresetBtnText}>2h ago</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timePresetBtn}
+                onPress={() => {
+                  const d = new Date();
+                  d.setHours(d.getHours() - 4);
+                  setRestartTime(d);
+                }}
+              >
+                <Text style={styles.timePresetBtnText}>4h ago</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.customHint}>Or pick a custom time below</Text>
+
+            <View style={styles.timeInputRow}>
+              <TextInput
+                style={styles.timeInput}
+                value={restartTime.getHours().toString()}
+                onChangeText={(text) => {
+                  const d = new Date(restartTime);
+                  const h = parseInt(text) || 0;
+                  d.setHours(Math.max(0, Math.min(23, h)));
+                  setRestartTime(d);
+                }}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <Text style={styles.timeSeparator}>:</Text>
+              <TextInput
+                style={styles.timeInput}
+                value={restartTime.getMinutes().toString().padStart(2, '0')}
+                onChangeText={(text) => {
+                  const d = new Date(restartTime);
+                  const m = parseInt(text) || 0;
+                  d.setMinutes(Math.max(0, Math.min(59, m)));
+                  setRestartTime(d);
+                }}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+            </View>
+
+            <View style={styles.restartActionButtons}>
+              <TouchableOpacity
+                style={styles.restartDeleteBtn}
+                onPress={handleRestartNow}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                <Text style={styles.restartDeleteText}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.customSaveBtn}
+                onPress={handleRestartAtTime}
+              >
+                <Text style={styles.customSaveText}>Start Fast</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -607,6 +807,147 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#4CAF50',
+  },
+  editCustomOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    marginTop: 12,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    gap: 8,
+  },
+  editCustomText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  customActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  resetButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF9800',
+  },
+  restartTimeDisplay: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  restartTimeLabel: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 4,
+  },
+  restartTimeValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  timePresetButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  timePresetBtn: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  timePresetBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  timeInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  timeInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    minWidth: 70,
+  },
+  timeSeparator: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#666',
+    marginHorizontal: 8,
+  },
+  restartActionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  restartDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFEBEE',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 8,
+    flex: 1,
+  },
+  restartDeleteText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF6B6B',
+  },
+  deleteRestartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  deleteRestartText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B6B',
   },
 });
 

@@ -31,6 +31,11 @@
       "package": "com.bgadd.fortibody",
       "permissions": ["android.permission.CAMERA"]
     },
+    "extra": {
+      "eas": {
+        "projectId": "1cce3f78-1a9a-43b3-b3ed-0d8ac84dac42"
+      }
+    },
     "plugins": [
       [
         "expo-camera",

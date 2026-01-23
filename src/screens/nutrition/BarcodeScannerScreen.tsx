@@ -4,15 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   ScrollView,
   Alert,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BarCodeScanner } from 'expo-barcode-scanner';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { MealType, MEAL_TYPES, FoodItem } from '../../services/nutrition/types';
 import streakService from '../../services/streak/StreakService';
@@ -30,7 +29,7 @@ interface ScannedProduct {
 export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
   navigation,
 }) => {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [productData, setProductData] = useState<ScannedProduct>({
     food: null,
@@ -52,13 +51,6 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
   const [editServingUnit, setEditServingUnit] = useState('');
 
   useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
-
-  useEffect(() => {
     if (productData.food) {
       setEditName(productData.food.name);
       setEditCalories(productData.food.calories.toString());
@@ -70,12 +62,14 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
     }
   }, [productData.food]);
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     setScanned(true);
     setProductData({ food: null, loading: true, error: null });
     setEditMode(false);
 
-    nutritionService.getFoodByBarcode(data).then(food => {
+    const barcode = result.raw ?? result.data;
+
+    nutritionService.getFoodByBarcode(barcode).then(food => {
       if (food) {
         setProductData({ food, loading: false, error: null });
       } else {
@@ -165,7 +159,7 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
     setFlashMode(!flashMode);
   };
 
-  if (hasPermission === null) {
+  if (permission === null) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Requesting camera permission...</Text>
@@ -173,7 +167,7 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
     );
   }
 
-  if (hasPermission === false) {
+  if (permission.status !== 'granted') {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
@@ -494,10 +488,13 @@ export const BarcodeScannerScreen: React.FC<BarcodeScannerScreenProps> = ({
       </View>
 
       <View style={styles.cameraContainer}>
-        <Camera
+        <CameraView
           style={StyleSheet.absoluteFillObject}
-          onBarCodeScanned={scanned ? undefined : (handleBarCodeScanned as any)}
-          flashMode={flashMode ? 2 : 0}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          flash={flashMode ? 'on' : 'off'}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'code93', 'qr'],
+          }}
         />
         <View style={styles.overlay}>
           <View style={styles.scanArea}>

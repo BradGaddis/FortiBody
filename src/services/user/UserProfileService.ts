@@ -263,6 +263,27 @@ class UserProfileService {
       console.error('Error saving body measurement:', error);
     }
   }
+
+  calculateBMR(profile: UserProfile): number {
+    const { age, gender, height, weight } = profile;
+    const heightInCm = height;
+    const weightInKg = profile.measurementSystem === 'imperial' ? weight * 0.453592 : weight;
+
+    if (gender === 'male') {
+      return Math.round(88.362 + (13.397 * weightInKg) + (4.799 * heightInCm) - (5.677 * age));
+    } else {
+      return Math.round(447.593 + (9.247 * weightInKg) + (3.098 * heightInCm) - (4.330 * age));
+    }
+  }
+
+  calculateTDEE(profile: UserProfile): number {
+    const bmr = this.calculateBMR(profile);
+    const activityMultipliers = [1.2, 1.375, 1.55, 1.725, 1.9];
+    const multiplier = activityMultipliers[profile.activityLevel - 1] || 1.2;
+    const tdee = Math.round(bmr * multiplier);
+    console.log('TDEE calculated:', { bmr, multiplier, tdee, activityLevel: profile.activityLevel });
+    return tdee;
+  }
 }
 
 export default UserProfileService;

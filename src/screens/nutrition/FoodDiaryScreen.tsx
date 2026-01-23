@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  SafeAreaView,
   ActivityIndicator,
   ScrollView,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutrition/NutritionService';
 import { FoodEntry, MealType, MEAL_TYPES } from '../../services/nutrition/types';

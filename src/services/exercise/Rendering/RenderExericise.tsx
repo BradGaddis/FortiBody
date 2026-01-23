@@ -1,5 +1,6 @@
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomButton from '../../Components/CustomButton';
 
 const styles = StyleSheet.create({

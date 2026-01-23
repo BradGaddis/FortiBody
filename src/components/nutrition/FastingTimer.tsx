@@ -10,15 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { fastingService, FastingStatus, FastingSplit } from '../../services/nutrition/FastingService';
 import { getCurrentPhase, getUpcomingPhase, FASTING_PHASES, FastingPhase } from '../../utils/fastingTimeline';
 
-interface FastingTimerProps {
-  onStartFasting?: () => void;
-  onPress?: () => void;
-  onEndFasting?: () => void;
-  compact?: boolean;
-  split?: FastingSplit;
+interface FastingTimelineSectionProps {
+  hoursFasted: number;
+  targetHours: number;
 }
 
-const FastingTimelineSection: React.FC<{ hoursFasted: number; targetHours: number }> = ({ hoursFasted, targetHours }) => {
+const FastingTimelineSection: React.FC<FastingTimelineSectionProps> = ({ hoursFasted, targetHours }) => {
   const currentPhase = getCurrentPhase(hoursFasted);
   const nextPhase = getUpcomingPhase(hoursFasted);
   
@@ -65,12 +62,22 @@ const FastingTimelineSection: React.FC<{ hoursFasted: number; targetHours: numbe
   );
 };
 
+interface FastingTimerProps {
+  onStartFasting?: () => void;
+  onPress?: () => void;
+  onEndFasting?: () => void;
+  compact?: boolean;
+  split?: FastingSplit;
+  onRestart?: () => void;
+}
+
 export const FastingTimer: React.FC<FastingTimerProps> = ({
   onStartFasting,
   onPress,
   onEndFasting,
   compact = false,
   split,
+  onRestart,
 }) => {
   const [fastingStatus, setFastingStatus] = useState<FastingStatus | null>(null);
   const progressAnim = useRef(new Animated.Value(0));
@@ -283,6 +290,15 @@ export const FastingTimer: React.FC<FastingTimerProps> = ({
           </>
         )}
       </View>
+
+      {fastingStatus.isFasting && (
+        <View style={styles.customActions}>
+          <TouchableOpacity style={styles.restartButton} onPress={onRestart}>
+            <Ionicons name="refresh-outline" size={18} color="#4CAF50" />
+            <Text style={styles.restartButtonText}>Restart Fast</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -553,6 +569,26 @@ const styles = StyleSheet.create({
   nextPhaseLabel: {
     fontSize: 13,
     color: '#888',
+  },
+  restartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  restartButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  customActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 16,
   },
 });
 

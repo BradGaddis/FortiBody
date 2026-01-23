@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View, SafeAreaView, ScrollView, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { EpleyConversion } from '../../../utils/Utils';
 
 
